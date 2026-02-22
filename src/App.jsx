@@ -53,6 +53,7 @@ export default function App() {
   const [newLeagueName, setNewLeagueName] = useState('');
   const [newLeaguePrize, setNewLeaguePrize] = useState('');
   const [newLeagueEndDate, setNewLeagueEndDate] = useState('');
+  const [newLeagueIsPublic, setNewLeagueIsPublic] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -77,14 +78,11 @@ export default function App() {
           name: l.name,
           code: l.code,
           endDate: d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }),
-          prize: l.prize
+          prize: l.prize,
+          isPublic: l.is_public || false
         };
       });
       setLeagues(formattedLeagues);
-
-      if (formattedLeagues.length > 0 && !activeLeagueId) {
-        setActiveLeagueId(formattedLeagues[0].id);
-      }
 
       const combinedUsers = (profilesData || []).map(p => {
         const uData = {
@@ -104,6 +102,14 @@ export default function App() {
         return uData;
       });
       setUsers(combinedUsers);
+
+      const currentUserData = combinedUsers.find(u => u.id === user.id);
+      const myLeaguesDb = formattedLeagues.filter(l => currentUserData?.leaguePoints[l.id] !== undefined);
+      if (myLeaguesDb.length > 0 && (!activeLeagueId || !myLeaguesDb.find(l => l.id === activeLeagueId))) {
+        setActiveLeagueId(myLeaguesDb[0].id);
+      } else if (myLeaguesDb.length === 0) {
+        setActiveLeagueId('');
+      }
 
       // 3. Obtener actividades de todos
       const { data: actsData } = await supabase.from('activities').select('*').order('created_at', { ascending: false }).limit(20);
@@ -269,7 +275,8 @@ export default function App() {
       name: newLeagueName,
       code: newCode,
       end_date: newLeagueEndDate,
-      prize: newLeaguePrize
+      prize: newLeaguePrize,
+      is_public: newLeagueIsPublic
     }).select().single();
 
     if (!error && newLeague) {
@@ -281,7 +288,20 @@ export default function App() {
       });
       setActiveLeagueId(newLeague.id);
       setShowCreateLeagueModal(false);
-      setNewLeagueName(''); setNewLeaguePrize(''); setNewLeagueEndDate('');
+      setNewLeagueName(''); setNewLeaguePrize(''); setNewLeagueEndDate(''); setNewLeagueIsPublic(false);
+      await loadData();
+    }
+  };
+
+  const handleJoinPublicLeague = async (leagueId) => {
+    const { error } = await supabase.from('league_members').insert({
+      league_id: leagueId,
+      user_id: user.id,
+      points: 0
+    });
+    if (!error) {
+      setActiveLeagueId(leagueId);
+      setShowCreateLeagueModal(false);
       await loadData();
     }
   };
@@ -391,7 +411,8 @@ export default function App() {
   );
 
   const LeagueView = () => {
-    const activeLeague = leagues.find(l => l.id === activeLeagueId);
+    const myLeagues = leagues.filter(l => currentUser.leaguePoints[l.id] !== undefined);
+    const activeLeague = myLeagues.find(l => l.id === activeLeagueId) || myLeagues[0];
 
     if (!activeLeague) {
       return (
@@ -412,11 +433,11 @@ export default function App() {
         <div className="flex gap-2">
           <div className="relative bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center overflow-hidden flex-1">
             <select
-              value={activeLeagueId}
+              value={activeLeague?.id || ''}
               onChange={(e) => setActiveLeagueId(e.target.value)}
               className="w-full bg-transparent font-bold text-slate-800 text-lg outline-none appearance-none pl-4 pr-12 py-4 cursor-pointer z-10"
             >
-              {leagues.map(league => (
+              {myLeagues.map(league => (
                 <option key={league.id} value={league.id}>🏆 {league.name}</option>
               ))}
             </select>
@@ -432,7 +453,7 @@ export default function App() {
         <div className="bg-slate-900 rounded-3xl p-6 text-white relative overflow-hidden shadow-xl">
           <div className="absolute -right-10 -top-10 opacity-10"><Trophy className="w-48 h-48" /></div>
           <div className="flex justify-between items-start">
-            <span className="bg-indigo-500 text-xs font-bold px-2 py-1 rounded-md uppercase tracking-wider">Activa</span>
+            <span className="bg-indigo-500 text-xs font-bold px-2 py-1 rounded-md uppercase tracking-wider">{activeLeague.isPublic ? 'Pública' : 'Privada'}</span>
             <span className="text-xs font-mono text-slate-400 bg-white/10 px-2 py-1 rounded-md">Cód: {activeLeague.code}</span>
           </div>
           <h1 className="text-2xl font-black mt-3 mb-1">{activeLeague.name}</h1>
@@ -508,14 +529,38 @@ export default function App() {
               </div>
 
               {leagueModalTab === 'join' ? (
-                <form onSubmit={handleJoinLeague} className="flex flex-col gap-6 flex-1">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Código de invitación</label>
-                    <input type="text" required placeholder="Ej: INVIERNO26" value={joinCode} onChange={(e) => setJoinCode(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl font-bold outline-none uppercase" />
-                    {joinError && <p className="text-red-500 text-xs font-bold mt-2">{joinError}</p>}
+                <div className="flex flex-col gap-6 flex-1">
+                  <form onSubmit={handleJoinLeague} className="flex flex-col gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Código de Liga Privada</label>
+                      <div className="flex gap-2">
+                        <input type="text" required placeholder="Ej: INVIERNO26" value={joinCode} onChange={(e) => setJoinCode(e.target.value)} className="flex-1 bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl font-bold outline-none uppercase" />
+                        <button type="submit" disabled={!joinCode.trim()} className="bg-indigo-600 px-6 text-white font-bold rounded-xl shadow-lg disabled:opacity-50">Unirse</button>
+                      </div>
+                      {joinError && <p className="text-red-500 text-xs font-bold mt-2">{joinError}</p>}
+                    </div>
+                  </form>
+
+                  <div className="mt-4 border-t border-slate-100 pt-6">
+                    <h3 className="text-sm font-bold text-slate-700 mb-3">Ligas Públicas Disponibles</h3>
+                    <div className="space-y-3">
+                      {leagues.filter(l => l.isPublic && currentUser.leaguePoints[l.id] === undefined).length === 0 && (
+                        <p className="text-xs text-slate-500 italic">No hay ligas públicas disponibles o ya estás en todas.</p>
+                      )}
+                      {leagues.filter(l => l.isPublic && currentUser.leaguePoints[l.id] === undefined).map(pubLeague => (
+                        <div key={pubLeague.id} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+                          <div>
+                            <p className="font-bold text-sm text-slate-800">{pubLeague.name}</p>
+                            <p className="text-xs text-slate-500">Premio: {pubLeague.prize}</p>
+                          </div>
+                          <button onClick={() => handleJoinPublicLeague(pubLeague.id)} className="bg-indigo-50 text-indigo-600 font-bold px-4 py-2 rounded-lg text-xs hover:bg-indigo-100">
+                            Unirme
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <button type="submit" disabled={!joinCode.trim()} className="w-full mt-auto bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg disabled:opacity-50">Unirse</button>
-                </form>
+                </div>
               ) : (
                 <form onSubmit={handleCreateLeague} className="flex flex-col gap-6 flex-1">
                   <div>
@@ -523,12 +568,21 @@ export default function App() {
                     <input type="text" required value={newLeagueName} onChange={(e) => setNewLeagueName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl font-bold outline-none" />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Premio</label>
-                    <input type="text" required value={newLeaguePrize} onChange={(e) => setNewLeaguePrize(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl font-bold outline-none" />
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Privacidad de la liga</label>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => setNewLeagueIsPublic(false)} className={`flex-1 py-3 text-sm font-bold rounded-xl border ${!newLeagueIsPublic ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200 text-slate-500'}`}>Privada (Código)</button>
+                      <button type="button" onClick={() => setNewLeagueIsPublic(true)} className={`flex-1 py-3 text-sm font-bold rounded-xl border ${newLeagueIsPublic ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200 text-slate-500'}`}>Pública</button>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Fecha de fin</label>
-                    <input type="date" required value={newLeagueEndDate} onChange={(e) => setNewLeagueEndDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl font-bold outline-none" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Premio</label>
+                      <input type="text" required value={newLeaguePrize} onChange={(e) => setNewLeaguePrize(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl font-bold outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Fecha de fin</label>
+                      <input type="date" required value={newLeagueEndDate} onChange={(e) => setNewLeagueEndDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl font-bold outline-none" />
+                    </div>
                   </div>
                   <button type="submit" className="w-full mt-auto bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg">Crear Liga</button>
                 </form>
