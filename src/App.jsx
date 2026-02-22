@@ -669,11 +669,38 @@ export default function App() {
                     <span className="text-xs font-semibold text-slate-500">Subir foto</span>
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => {
                       const file = e.target.files[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => setPhoto(reader.result);
-                        reader.readAsDataURL(file);
-                      }
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.readAsDataURL(file);
+                      reader.onload = (event) => {
+                        const img = new window.Image();
+                        img.src = event.target.result;
+                        img.onload = () => {
+                          const canvas = document.createElement('canvas');
+                          const MAX_WIDTH = 800;
+                          const MAX_HEIGHT = 800;
+                          let width = img.width;
+                          let height = img.height;
+
+                          if (width > height) {
+                            if (width > MAX_WIDTH) {
+                              height *= MAX_WIDTH / width;
+                              width = MAX_WIDTH;
+                            }
+                          } else {
+                            if (height > MAX_HEIGHT) {
+                              width *= MAX_HEIGHT / height;
+                              height = MAX_HEIGHT;
+                            }
+                          }
+                          canvas.width = width;
+                          canvas.height = height;
+                          const ctx = canvas.getContext('2d');
+                          ctx.drawImage(img, 0, 0, width, height);
+                          const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // 60% quality JPEG
+                          setPhoto(dataUrl);
+                        };
+                      };
                     }} />
                   </label>
                 ) : (
@@ -717,11 +744,38 @@ export default function App() {
                   <Camera className="w-4 h-4" /> <span>Cambiar Foto</span>
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => {
                     const file = e.target.files[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onloadend = () => setEditAvatar(reader.result);
-                      reader.readAsDataURL(file);
-                    }
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = (event) => {
+                      const img = new window.Image();
+                      img.src = event.target.result;
+                      img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 400; // Profile pics can be smaller
+                        const MAX_HEIGHT = 400;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                          if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                          }
+                        } else {
+                          if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                          }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                        setEditAvatar(dataUrl);
+                      };
+                    };
                   }} />
                 </label>
               </div>
