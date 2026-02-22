@@ -481,7 +481,13 @@ export default function App() {
             {leagueLeaderboard.map((u, index) => (
               <div key={u.id} className={`flex items-center p-4 ${index !== leagueLeaderboard.length - 1 ? 'border-b border-slate-50' : ''} ${u.id === user.id ? 'bg-indigo-50/50' : ''}`}>
                 <div className="w-8 font-black text-slate-300 text-lg">{index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}</div>
-                <div className="text-2xl mr-3 bg-slate-100 w-10 h-10 flex items-center justify-center rounded-full">{u.avatar}</div>
+                <div className="text-2xl mr-3 bg-slate-100 w-10 h-10 flex items-center justify-center rounded-full overflow-hidden flex-shrink-0">
+                  {(u.avatar && (u.avatar.startsWith('data:image') || u.avatar.startsWith('http'))) ? (
+                    <img src={u.avatar} alt="avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    u.avatar || '😎'
+                  )}
+                </div>
                 <div className="flex-1">
                   <p className={`font-bold ${u.id === user.id ? 'text-indigo-700' : 'text-slate-800'}`}>{u.name} {u.id === user.id && '(Tú)'}</p>
                 </div>
