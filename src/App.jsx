@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, Trophy, PlusCircle, Activity, Award, User, Clock, ChevronRight, Zap, Target, Users, Trash2, Bookmark, Camera, X, LogOut, Settings, Image, Save } from 'lucide-react';
+import { Home, Trophy, PlusCircle, Activity, Award, User, Clock, ChevronRight, Zap, Target, Users, Trash2, Bookmark, Camera, X, LogOut, Settings, Image, Save, Pencil } from 'lucide-react';
 import { useAuth } from './contexts/AuthContext';
 import Auth from './components/Auth';
 import { supabase } from './lib/supabase';
@@ -44,6 +44,13 @@ export default function App() {
 
   // Estado para la liga seleccionada
   const [activeLeagueId, setActiveLeagueId] = useState('');
+
+  // Estados para editar actividad
+  const [editingActivity, setEditingActivity] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editDuration, setEditDuration] = useState(45);
+  const [editDetails, setEditDetails] = useState('');
+  const [editPhoto, setEditPhoto] = useState(null);
 
   // Estados para crear/unirse a nueva liga
   const [showCreateLeagueModal, setShowCreateLeagueModal] = useState(false);
@@ -267,6 +274,52 @@ export default function App() {
     await loadData();
   };
 
+  const handleEditActivity = (act) => {
+    setEditingActivity(act);
+    setEditDuration(act.duration);
+    setEditDetails(act.details);
+    setEditPhoto(act.photo);
+    setShowEditModal(true);
+  };
+
+  const saveEditedActivity = async (e) => {
+    e.preventDefault();
+    if (!editingActivity) return;
+
+    await supabase.from('activities').update({
+      duration: editDuration,
+      details: editDetails,
+      photo_url: editPhoto
+    }).eq('id', editingActivity.id);
+
+    setShowEditModal(false);
+    setEditingActivity(null);
+    await loadData();
+  };
+
+  const handleDeleteActivity = async (act) => {
+    if (!window.confirm("¿Seguro que quieres eliminar esta actividad? Se restarán los puntos obtenidos.")) return;
+
+    // Eliminar de base de datos
+    await supabase.from('activities').delete().eq('id', act.id);
+
+    // Restar puntos perfil
+    const pointsToSubtract = act.points;
+    await supabase.from('profiles').update({ total_points: currentUser.totalPoints - pointsToSubtract }).eq('id', user.id);
+
+    // Restar puntos Ligas
+    const userLeagues = Object.keys(currentUser.leaguePoints);
+    for (const lId of userLeagues) {
+      if (currentUser.leaguePoints[lId]) {
+        await supabase.from('league_members')
+          .update({ points: currentUser.leaguePoints[lId] - pointsToSubtract })
+          .match({ user_id: user.id, league_id: lId });
+      }
+    }
+
+    await loadData();
+  };
+
   const handleCreateLeague = async (e) => {
     e.preventDefault();
     const newCode = (newLeagueName.substring(0, 3).toUpperCase() || 'FIT') + Math.floor(Math.random() * 1000);
@@ -392,8 +445,16 @@ export default function App() {
                         </p>
                       </div>
                     </div>
-                    <div className="text-emerald-500 font-bold bg-emerald-50 px-3 py-1 rounded-full text-sm">
-                      +{Math.floor(act.points)}
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="text-emerald-500 font-bold bg-emerald-50 px-3 py-1 rounded-full text-sm">
+                        +{Math.floor(act.points)}
+                      </div>
+                      {act.userId === user.id && (
+                        <div className="flex gap-2">
+                          <button onClick={() => handleEditActivity(act)} className="text-slate-400 hover:text-indigo-600 transition-colors bg-slate-50 p-2 rounded-full border border-slate-100 shadow-sm"><Pencil className="w-4 h-4" /></button>
+                          <button onClick={() => handleDeleteActivity(act)} className="text-slate-400 hover:text-red-500 transition-colors bg-slate-50 p-2 rounded-full border border-slate-100 shadow-sm"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      )}
                     </div>
                   </div>
                   {act.photo && (
@@ -818,6 +879,84 @@ export default function App() {
                   <LogOut className="w-5 h-5" /> Cerrar sesión
                 </button>
               </div>
+            </form>
+          </div>
+        )}
+
+        {showEditModal && editingActivity && (
+          <div className="absolute inset-0 z-50 bg-white animate-in slide-in-from-bottom-full duration-300 flex flex-col">
+            <div className="p-6 bg-slate-900 text-white flex justify-between items-center rounded-b-3xl shadow-lg">
+              <h2 className="text-xl font-bold">Editar Actividad</h2>
+              <button onClick={() => setShowEditModal(false)} className="bg-white/10 p-2 rounded-full"><X className="w-6 h-6" /></button>
+            </div>
+
+            <form onSubmit={saveEditedActivity} className="p-6 flex-1 flex flex-col gap-6 overflow-y-auto">
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-2">Duración (Minutos)</label>
+                  <div className="flex items-center gap-4">
+                    <input type="range" min="10" max="180" step="5" value={editDuration} onChange={(e) => setEditDuration(parseInt(e.target.value))} className="flex-1 accent-indigo-600" />
+                    <div className="w-16 text-center font-black text-lg text-indigo-600 bg-indigo-100 py-1 rounded-lg">{editDuration}'</div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-2">Detalles / Notas</label>
+                  <input type="text" value={editDetails} onChange={(e) => setEditDetails(e.target.value)} className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl text-sm font-bold" />
+                </div>
+              </div>
+
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Foto</label>
+                {!editPhoto ? (
+                  <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-slate-200 border-dashed rounded-xl cursor-pointer bg-white">
+                    <Camera className="w-6 h-6 text-slate-400 mb-1" />
+                    <span className="text-xs font-semibold text-slate-500">Subir foto nueva</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.readAsDataURL(file);
+                      reader.onload = (event) => {
+                        const img = new window.Image();
+                        img.src = event.target.result;
+                        img.onload = () => {
+                          const canvas = document.createElement('canvas');
+                          const MAX_WIDTH = 800; // Profile pics can be smaller
+                          const MAX_HEIGHT = 800;
+                          let width = img.width;
+                          let height = img.height;
+
+                          if (width > height) {
+                            if (width > MAX_WIDTH) {
+                              height *= MAX_WIDTH / width;
+                              width = MAX_WIDTH;
+                            }
+                          } else {
+                            if (height > MAX_HEIGHT) {
+                              width *= MAX_HEIGHT / height;
+                              height = MAX_HEIGHT;
+                            }
+                          }
+                          canvas.width = width;
+                          canvas.height = height;
+                          const ctx = canvas.getContext('2d');
+                          ctx.drawImage(img, 0, 0, width, height);
+                          const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                          setEditPhoto(dataUrl);
+                        };
+                      };
+                    }} />
+                  </label>
+                ) : (
+                  <div className="relative rounded-xl overflow-hidden h-40">
+                    <img src={editPhoto} alt="Preview" className="w-full h-full object-cover" />
+                    <button type="button" onClick={() => setEditPhoto(null)} className="absolute top-2 right-2 bg-slate-900/60 p-1.5 rounded-full text-white"><X className="w-4 h-4" /></button>
+                  </div>
+                )}
+              </div>
+
+              <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg mt-auto">Guardar Cambios</button>
             </form>
           </div>
         )}
