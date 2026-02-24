@@ -539,8 +539,10 @@ export default function App() {
               <ChevronRight className="w-5 h-5 text-slate-400 rotate-90" />
             </div>
           </div>
-          <button onClick={() => { setShowCreateLeagueModal(true); setLeagueModalTab('join'); setJoinError(''); }} className="bg-indigo-600 text-white p-4 rounded-2xl shadow-sm hover:bg-indigo-700 transition-colors flex flex-shrink-0">
-            <PlusCircle className="w-6 h-6" />
+          <button onClick={() => { setShowCreateLeagueModal(true); setLeagueModalTab('join'); setJoinError(''); }} className="bg-indigo-600 text-white px-5 py-4 rounded-2xl shadow-sm hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 font-bold text-sm flex-shrink-0">
+            <PlusCircle className="w-5 h-5" />
+            <span className="hidden sm:inline">Nueva Liga</span>
+            <span className="inline sm:hidden">Liga</span>
           </button>
         </div>
 
