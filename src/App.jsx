@@ -14,6 +14,11 @@ const SPORTS = [
 export default function App() {
   const { user, loading: authLoading, logout } = useAuth();
 
+  const getDefaultDate = () => {
+    const tzOffset = (new Date()).getTimezoneOffset() * 60000;
+    return (new Date(Date.now() - tzOffset)).toISOString().slice(0, 16);
+  };
+
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
   const [users, setUsers] = useState([]);
@@ -33,6 +38,7 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedSport, setSelectedSport] = useState(SPORTS[0]);
   const [duration, setDuration] = useState(45);
+  const [activityDate, setActivityDate] = useState(getDefaultDate());
 
   const [distance, setDistance] = useState('');
   const [exercises, setExercises] = useState([{ id: 1, name: '', sets: 3, reps: 10, weight: '' }]);
@@ -52,6 +58,7 @@ export default function App() {
   const [editDuration, setEditDuration] = useState(45);
   const [editDetails, setEditDetails] = useState('');
   const [editPhoto, setEditPhoto] = useState(null);
+  const [editDate, setEditDate] = useState(getDefaultDate());
 
   // Estados para crear/unirse a nueva liga
   const [showCreateLeagueModal, setShowCreateLeagueModal] = useState(false);
@@ -130,6 +137,7 @@ export default function App() {
           duration: a.duration,
           points: a.points,
           date: d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          createdAt: a.created_at,
           details: a.details,
           photo: a.photo_url
         };
@@ -181,7 +189,8 @@ export default function App() {
     setExercises([{ id: 1, name: '', sets: 3, reps: 10, weight: '' }]);
     setRoutineName('');
     setSelectedRoutineId('');
-  }, [selectedSport]);
+    if (!showLogModal) setActivityDate(getDefaultDate());
+  }, [selectedSport, showLogModal]);
 
   const calculatePoints = () => {
     let pts = 0;
@@ -260,7 +269,8 @@ export default function App() {
         duration: duration,
         points: pointsEarned,
         details: detailsText,
-        photo_url: photoUrl
+        photo_url: photoUrl,
+        created_at: new Date(activityDate).toISOString()
       });
 
       // Actualizar puntos de Perfil (usamos la logica segura via supabase JS)
@@ -289,6 +299,12 @@ export default function App() {
     setEditDuration(act.duration);
     setEditDetails(act.details);
     setEditPhoto(act.photo);
+
+    const d = new Date(act.createdAt);
+    const tzOffset = d.getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(d.getTime() - tzOffset)).toISOString().slice(0, 16);
+    setEditDate(localISOTime);
+
     setShowEditModal(true);
   };
 
@@ -299,7 +315,8 @@ export default function App() {
     await supabase.from('activities').update({
       duration: editDuration,
       details: editDetails,
-      photo_url: editPhoto
+      photo_url: editPhoto,
+      created_at: new Date(editDate).toISOString()
     }).eq('id', editingActivity.id);
 
     setShowEditModal(false);
@@ -689,6 +706,10 @@ export default function App() {
 
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-4">
                 <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-2">Fecha y Hora</label>
+                  <input type="datetime-local" value={activityDate} onChange={(e) => setActivityDate(e.target.value)} required className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl text-sm font-bold" />
+                </div>
+                <div>
                   <label className="block text-xs font-bold text-slate-500 mb-2">Duración (Minutos)</label>
                   <div className="flex items-center gap-4">
                     <input type="range" min="10" max="180" step="5" value={duration} onChange={(e) => setDuration(parseInt(e.target.value))} className="flex-1 accent-indigo-600" />
@@ -904,6 +925,10 @@ export default function App() {
 
             <form onSubmit={saveEditedActivity} className="p-6 flex-1 flex flex-col gap-6 overflow-y-auto">
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-2">Fecha y Hora</label>
+                  <input type="datetime-local" value={editDate} onChange={(e) => setEditDate(e.target.value)} required className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl text-sm font-bold" />
+                </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-2">Duración (Minutos)</label>
                   <div className="flex items-center gap-4">
