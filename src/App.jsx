@@ -30,6 +30,7 @@ export default function App() {
 
   // Estados para el modal de registro
   const [showLogModal, setShowLogModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedSport, setSelectedSport] = useState(SPORTS[0]);
   const [duration, setDuration] = useState(45);
 
@@ -218,60 +219,69 @@ export default function App() {
 
   const handleLogActivity = async (e) => {
     e.preventDefault();
-    const pointsEarned = calculatePoints();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
-    let detailsText = '';
-    if (selectedSport.id === 'gym') {
-      const totalSets = exercises.reduce((acc, curr) => acc + (parseInt(curr.sets) || 0), 0);
-      detailsText = routineName.trim() !== ''
-        ? `${routineName} (${exercises.length} ej, ${totalSets} series)`
-        : `${exercises.length} ejercicios, ${totalSets} series`;
+    try {
+      const pointsEarned = calculatePoints();
 
-      // Guardar o Actualizar Rutina en Supabase
-      if (routineName.trim() !== '') {
-        const existing = savedRoutines.find(r => r.name.toLowerCase() === routineName.trim().toLowerCase());
-        if (existing) {
-          await supabase.from('routines').update({ exercises }).eq('id', existing.id);
-        } else {
-          await supabase.from('routines').insert({ user_id: user.id, name: routineName.trim(), exercises });
+      let detailsText = '';
+      if (selectedSport.id === 'gym') {
+        const totalSets = exercises.reduce((acc, curr) => acc + (parseInt(curr.sets) || 0), 0);
+        detailsText = routineName.trim() !== ''
+          ? `${routineName} (${exercises.length} ej, ${totalSets} series)`
+          : `${exercises.length} ejercicios, ${totalSets} series`;
+
+        // Guardar o Actualizar Rutina en Supabase
+        if (routineName.trim() !== '') {
+          const existing = savedRoutines.find(r => r.name.toLowerCase() === routineName.trim().toLowerCase());
+          if (existing) {
+            await supabase.from('routines').update({ exercises }).eq('id', existing.id);
+          } else {
+            await supabase.from('routines').insert({ user_id: user.id, name: routineName.trim(), exercises });
+          }
         }
+      } else {
+        detailsText = `${distance} ${selectedSport.unit}`;
       }
-    } else {
-      detailsText = `${distance} ${selectedSport.unit}`;
+
+      let photoUrl = null;
+      if (photo) {
+        // En una app real aqui subiriamos la imagen al Storage bucket. Queda como null en base de datos de pruebas o guardamos base64
+        // por simplicidad si no es muy grande. Pero supabase storage seria lo ideal.
+        // Guardaremos base64 por brevedad si es pequeño, sino petará la BD. 
+        photoUrl = photo;
+      }
+
+      // Insertar actividad
+      await supabase.from('activities').insert({
+        user_id: user.id,
+        sport_id: selectedSport.id,
+        duration: duration,
+        points: pointsEarned,
+        details: detailsText,
+        photo_url: photoUrl
+      });
+
+      // Actualizar puntos de Perfil (usamos la logica segura via supabase JS)
+      await supabase.from('profiles').update({ total_points: currentUser.totalPoints + pointsEarned }).eq('id', user.id);
+
+      // Actualizar puntos en Ligas actuales
+      const userLeagues = Object.keys(currentUser.leaguePoints);
+      for (const lId of userLeagues) {
+        await supabase.from('league_members')
+          .update({ points: currentUser.leaguePoints[lId] + pointsEarned })
+          .match({ user_id: user.id, league_id: lId });
+      }
+
+      setShowLogModal(false);
+      setPhoto(null);
+      await loadData();
+    } catch (err) {
+      console.error("Error logging activity:", err);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    let photoUrl = null;
-    if (photo) {
-      // En una app real aqui subiriamos la imagen al Storage bucket. Queda como null en base de datos de pruebas o guardamos base64
-      // por simplicidad si no es muy grande. Pero supabase storage seria lo ideal.
-      // Guardaremos base64 por brevedad si es pequeño, sino petará la BD. 
-      photoUrl = photo;
-    }
-
-    // Insertar actividad
-    await supabase.from('activities').insert({
-      user_id: user.id,
-      sport_id: selectedSport.id,
-      duration: duration,
-      points: pointsEarned,
-      details: detailsText,
-      photo_url: photoUrl
-    });
-
-    // Actualizar puntos de Perfil (usamos la logica segura via supabase JS)
-    await supabase.from('profiles').update({ total_points: currentUser.totalPoints + pointsEarned }).eq('id', user.id);
-
-    // Actualizar puntos en Ligas actuales
-    const userLeagues = Object.keys(currentUser.leaguePoints);
-    for (const lId of userLeagues) {
-      await supabase.from('league_members')
-        .update({ points: currentUser.leaguePoints[lId] + pointsEarned })
-        .match({ user_id: user.id, league_id: lId });
-    }
-
-    setShowLogModal(false);
-    setPhoto(null);
-    await loadData();
   };
 
   const handleEditActivity = (act) => {
@@ -785,7 +795,9 @@ export default function App() {
                 <div className="text-3xl font-black text-emerald-600">+{calculatePoints()}</div>
               </div>
 
-              <button type="submit" disabled={calculatePoints() === 0} className="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl shadow-lg disabled:opacity-50">Guardar Actividad</button>
+              <button type="submit" disabled={calculatePoints() === 0 || isSubmitting} className="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl shadow-lg disabled:opacity-50">
+                {isSubmitting ? 'Guardando...' : 'Guardar Actividad'}
+              </button>
             </form>
           </div>
         )}
