@@ -9,6 +9,8 @@ const SPORTS = [
   { id: 'gym', name: 'Gimnasio', icon: '🏋️‍♀️', color: 'bg-purple-500', unit: 'ejercicios', step: 1 },
   { id: 'cycling', name: 'Ciclismo', icon: '🚴', color: 'bg-emerald-500', unit: 'km', step: 1 },
   { id: 'swimming', name: 'Natación', icon: '🏊‍♂️', color: 'bg-cyan-500', unit: 'm', step: 50 },
+  { id: 'playbacks', name: 'Playbacks', icon: '💃', color: 'bg-pink-500' },
+  { id: 'rugby', name: 'Rugby', icon: '🏉', color: 'bg-orange-500' },
 ];
 
 export default function App() {
@@ -203,6 +205,8 @@ export default function App() {
         const totalSets = exercises.reduce((acc, curr) => acc + (parseInt(curr.sets) || 0), 0);
         pts = (duration * 1) + (totalSets * 2);
         break;
+      case 'playbacks': pts = duration * 0.5; break;
+      case 'rugby': pts = duration * 0.8; break;
       default: pts = 0;
     }
     return Math.floor(pts);
@@ -250,8 +254,10 @@ export default function App() {
             await supabase.from('routines').insert({ user_id: user.id, name: routineName.trim(), exercises });
           }
         }
-      } else {
+      } else if (selectedSport.unit) {
         detailsText = `${distance} ${selectedSport.unit}`;
+      } else {
+        detailsText = `${duration} minutos`;
       }
 
       let photoUrl = null;
@@ -717,7 +723,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {selectedSport.id !== 'gym' && (
+                {selectedSport.id !== 'gym' && selectedSport.unit && (
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-2">Distancia ({selectedSport.unit})</label>
                     <input type="number" step={selectedSport.step} min="0" required value={distance} onChange={(e) => setDistance(e.target.value)} className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl font-bold" />
