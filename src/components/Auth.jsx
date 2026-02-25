@@ -8,6 +8,7 @@ export default function Auth() {
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
     const [error, setError] = useState(null);
+    const [successMsg, setSuccessMsg] = useState(null);
     const [loading, setLoading] = useState(false);
 
     const { loginWithEmail, registerWithEmail, loginWithGoogle } = useAuth();
@@ -15,6 +16,7 @@ export default function Auth() {
     const handleEmailSubmit = async (e) => {
         e.preventDefault();
         setError(null);
+        setSuccessMsg(null);
         setLoading(true);
 
         try {
@@ -22,11 +24,28 @@ export default function Auth() {
                 const { error } = await loginWithEmail(email, password);
                 if (error) throw error;
             } else {
-                const { error } = await registerWithEmail(email, password, name);
-                if (error) throw error;
+                const res = await registerWithEmail(email, password, name);
+
+                if (res.error) {
+                    // Si tira error de rate limit, lo interpretamos como que ya se ha enviado.
+                    if (res.error.message.includes('security purposes') || res.error.status === 429) {
+                        setSuccessMsg('Ya hemos enviado un correo. Revisa tu bandeja de entrada o la carpeta de spam.');
+                        return;
+                    }
+                    throw res.error;
+                }
+
+                // Supabase permite "registrar" un email que ya existe sin emitir error (por seguridad),
+                // en ese caso la matriz de identities viene vacía.
+                if (res.data?.user && res.data.user.identities && res.data.user.identities.length === 0) {
+                    setError('Este correo electrónico ya está registrado. Por favor, inicia sesión.');
+                    return;
+                }
+
+                setSuccessMsg('¡Registro completado! Se te ha envíado un correo de confirmación. Revisa tu bandeja y verifica tu cuenta para acceder.');
             }
         } catch (err) {
-            setError(err.message);
+            setError(err.message === 'Invalid login credentials' ? 'Credenciales incorrectas' : err.message);
         } finally {
             setLoading(false);
         }
@@ -56,13 +75,13 @@ export default function Auth() {
                     {/* Tabs */}
                     <div className="flex bg-slate-100 p-1 rounded-xl mb-8">
                         <button
-                            onClick={() => { setIsLogin(true); setError(null); }}
+                            onClick={() => { setIsLogin(true); setError(null); setSuccessMsg(null); }}
                             className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${isLogin ? 'bg-white shadow text-indigo-600' : 'text-slate-500'}`}
                         >
                             Iniciar Sesión
                         </button>
                         <button
-                            onClick={() => { setIsLogin(false); setError(null); }}
+                            onClick={() => { setIsLogin(false); setError(null); setSuccessMsg(null); }}
                             className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${!isLogin ? 'bg-white shadow text-indigo-600' : 'text-slate-500'}`}
                         >
                             Registrarse
@@ -111,6 +130,12 @@ export default function Auth() {
                         {error && (
                             <div className="bg-red-50 text-red-500 p-3 rounded-xl text-sm font-medium border border-red-100">
                                 {error}
+                            </div>
+                        )}
+
+                        {successMsg && (
+                            <div className="bg-emerald-50 text-emerald-600 p-3 rounded-xl text-sm font-medium border border-emerald-100">
+                                {successMsg}
                             </div>
                         )}
 
