@@ -71,6 +71,7 @@ export default function App() {
   const [newLeaguePrize, setNewLeaguePrize] = useState('');
   const [newLeagueEndDate, setNewLeagueEndDate] = useState('');
   const [newLeagueIsPublic, setNewLeagueIsPublic] = useState(false);
+  const [newLeagueDescription, setNewLeagueDescription] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -105,6 +106,7 @@ export default function App() {
               id: l.id,
               name: l.name,
               code: l.code,
+              description: l.description || '',
               endDate: d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }),
               prize: l.prize,
               isPublic: l.is_public || false
@@ -375,6 +377,7 @@ export default function App() {
     const { data: newLeague, error } = await supabase.from('leagues').insert({
       name: newLeagueName,
       code: newCode,
+      description: newLeagueDescription,
       end_date: newLeagueEndDate,
       prize: newLeaguePrize,
       is_public: newLeagueIsPublic
@@ -389,7 +392,7 @@ export default function App() {
       });
       setActiveLeagueId(newLeague.id);
       setShowCreateLeagueModal(false);
-      setNewLeagueName(''); setNewLeaguePrize(''); setNewLeagueEndDate(''); setNewLeagueIsPublic(false);
+      setNewLeagueName(''); setNewLeaguePrize(''); setNewLeagueEndDate(''); setNewLeagueIsPublic(false); setNewLeagueDescription('');
       await loadData();
     }
   };
@@ -570,6 +573,12 @@ export default function App() {
           <h1 className="text-2xl font-black mt-3 mb-1">{activeLeague.name}</h1>
           <p className="text-slate-400 text-sm flex items-center gap-2"><Users className="w-4 h-4" /> {leagueLeaderboard.length} Participantes</p>
 
+          {activeLeague.description && (
+            <div className="mt-4 bg-white/5 p-3 text-sm text-slate-300 rounded-xl border border-white/10 italic">
+              <p>{activeLeague.description}</p>
+            </div>
+          )}
+
           <div className="mt-5 bg-white/10 p-4 rounded-2xl border border-white/10 backdrop-blur-md">
             <div className="flex items-start gap-3">
               <Award className="w-6 h-6 text-yellow-400 flex-shrink-0" />
@@ -599,8 +608,9 @@ export default function App() {
                     u.avatar || '😎'
                   )}
                 </div>
-                <div className="flex-1">
-                  <p className={`font-bold ${u.id === user.id ? 'text-indigo-700' : 'text-slate-800'}`}>{u.name} {u.id === user.id && '(Tú)'}</p>
+                <div className="flex-1 min-w-0">
+                  <p className={`font-bold truncate ${u.id === user.id ? 'text-indigo-700' : 'text-slate-800'}`}>{u.name} {u.id === user.id && '(Tú)'}</p>
+                  {u.bio && <p className="text-xs text-slate-500 font-medium mt-0.5 truncate pr-2">{u.bio}</p>}
                 </div>
                 <div className="font-black text-slate-800 text-lg">{Math.floor(u.leaguePoints[activeLeagueId])} <span className="text-xs font-normal text-slate-500">pts</span></div>
               </div>
@@ -688,6 +698,10 @@ export default function App() {
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">Nombre de la liga</label>
                     <input type="text" required value={newLeagueName} onChange={(e) => setNewLeagueName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl font-bold outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Descripción o Reglas (Opcional)</label>
+                    <textarea placeholder="Ej: Puntos dobles los domingos..." value={newLeagueDescription} onChange={(e) => setNewLeagueDescription(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl font-medium outline-none text-sm min-h-[80px]" />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">Privacidad de la liga</label>
