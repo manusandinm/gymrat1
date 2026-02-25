@@ -66,8 +66,8 @@ export default function Auth() {
 
                 {/* Header */}
                 <div className="bg-slate-900 p-8 text-center relative overflow-hidden text-white">
-                    <Trophy className="w-48 h-48 absolute -top-10 -right-10 opacity-10" />
-                    <h1 className="text-3xl font-black mb-2 relative z-10">GymRat</h1>
+                    <Trophy className="w-48 h-48 absolute -top-10 -right-10 opacity-10 text-indigo-500" />
+                    <h1 className="text-4xl font-black mb-2 relative z-10 text-indigo-500 tracking-tighter">GYMRAT</h1>
                     <p className="text-slate-400 font-medium relative z-10">Compite con tus amigos entrenando</p>
                 </div>
 

@@ -614,6 +614,11 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-indigo-100">
       <div className="max-w-md mx-auto bg-slate-50 min-h-screen relative shadow-2xl overflow-hidden flex flex-col">
+        {/* Top left Logo */}
+        <div className="absolute top-6 left-6 z-40">
+          <span className="text-2xl font-black text-indigo-600 tracking-tighter">GYMRAT</span>
+        </div>
+
         {/* Top right Profile Button */}
         <div className="absolute top-4 right-4 z-40">
           <button onClick={openProfileView} className="bg-white/90 backdrop-blur border border-slate-200 p-1 rounded-full shadow-sm flex items-center gap-2 hover:bg-slate-50 transition-colors">
@@ -1026,7 +1031,7 @@ export default function App() {
             <Home className={`w-6 h-6 ${activeTab === 'home' ? 'fill-indigo-100' : ''}`} /><span className="text-[10px] font-bold text-center">Inicio</span>
           </button>
           <button onClick={() => setShowLogModal(true)} className="flex flex-col items-center gap-1 w-24 text-slate-400 hover:text-indigo-600">
-            <PlusCircle className="w-6 h-6" /><span className="text-[10px] font-bold text-center px-1">Añadir actividad</span>
+            <PlusCircle className="w-6 h-6" /><span className="text-[10px] font-bold text-center px-1">Actividad</span>
           </button>
           <button onClick={() => setActiveTab('league')} className={`flex flex-col items-center gap-1 w-24 ${activeTab === 'league' ? 'text-indigo-600' : 'text-slate-400'}`}>
             <Trophy className={`w-6 h-6 ${activeTab === 'league' ? 'fill-indigo-100' : ''}`} /><span className="text-[10px] font-bold text-center">Liga</span>
