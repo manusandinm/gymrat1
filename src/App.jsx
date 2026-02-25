@@ -1021,15 +1021,15 @@ export default function App() {
           </div>
         )}
 
-        <nav className="bg-white border-t border-slate-100 flex justify-between px-8 py-4 pb-6 z-40 relative shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)]">
-          <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-1 w-16 ${activeTab === 'home' ? 'text-indigo-600' : 'text-slate-400'}`}>
-            <Home className={`w-6 h-6 ${activeTab === 'home' ? 'fill-indigo-100' : ''}`} /><span className="text-[10px] font-bold">Inicio</span>
+        <nav className="fixed bottom-0 w-full max-w-md bg-white border-t border-slate-100 flex justify-between px-6 py-4 pb-6 z-40 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)]">
+          <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-1 w-24 ${activeTab === 'home' ? 'text-indigo-600' : 'text-slate-400'}`}>
+            <Home className={`w-6 h-6 ${activeTab === 'home' ? 'fill-indigo-100' : ''}`} /><span className="text-[10px] font-bold text-center">Inicio</span>
           </button>
-          <button onClick={() => setShowLogModal(true)} className="flex flex-col items-center gap-1 -mt-8 absolute left-1/2 -translate-x-1/2">
-            <div className="bg-indigo-600 text-white p-4 rounded-full shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 transition-transform active:scale-95 transform"><PlusCircle className="w-8 h-8" /></div>
+          <button onClick={() => setShowLogModal(true)} className="flex flex-col items-center gap-1 w-24 text-slate-400 hover:text-indigo-600">
+            <PlusCircle className="w-6 h-6" /><span className="text-[10px] font-bold text-center px-1">Añadir actividad</span>
           </button>
-          <button onClick={() => setActiveTab('league')} className={`flex flex-col items-center gap-1 w-16 ${activeTab === 'league' ? 'text-indigo-600' : 'text-slate-400'}`}>
-            <Trophy className={`w-6 h-6 ${activeTab === 'league' ? 'fill-indigo-100' : ''}`} /><span className="text-[10px] font-bold">Liga</span>
+          <button onClick={() => setActiveTab('league')} className={`flex flex-col items-center gap-1 w-24 ${activeTab === 'league' ? 'text-indigo-600' : 'text-slate-400'}`}>
+            <Trophy className={`w-6 h-6 ${activeTab === 'league' ? 'fill-indigo-100' : ''}`} /><span className="text-[10px] font-bold text-center">Liga</span>
           </button>
         </nav>
 
