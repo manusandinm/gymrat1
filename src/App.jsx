@@ -72,6 +72,7 @@ export default function App() {
   const [newLeagueEndDate, setNewLeagueEndDate] = useState('');
   const [newLeagueIsPublic, setNewLeagueIsPublic] = useState(false);
   const [newLeagueDescription, setNewLeagueDescription] = useState('');
+  const [newLeaguePunishment, setNewLeaguePunishment] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -109,6 +110,7 @@ export default function App() {
               description: l.description || '',
               endDate: d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }),
               prize: l.prize,
+              punishment: l.punishment || '',
               isPublic: l.is_public || false
             };
           })
@@ -378,10 +380,17 @@ export default function App() {
       name: newLeagueName,
       code: newCode,
       description: newLeagueDescription,
+      punishment: newLeaguePunishment,
       end_date: newLeagueEndDate,
       prize: newLeaguePrize,
       is_public: newLeagueIsPublic
     }).select().single();
+
+    if (error) {
+      console.error("Error al crear liga:", error);
+      alert("Error al crear la liga. Asegúrate de haber actualizado la base de datos (Supabase). Detalle: " + error.message);
+      return;
+    }
 
     if (!error && newLeague) {
       // Auto join the creator
@@ -392,7 +401,7 @@ export default function App() {
       });
       setActiveLeagueId(newLeague.id);
       setShowCreateLeagueModal(false);
-      setNewLeagueName(''); setNewLeaguePrize(''); setNewLeagueEndDate(''); setNewLeagueIsPublic(false); setNewLeagueDescription('');
+      setNewLeagueName(''); setNewLeaguePrize(''); setNewLeagueEndDate(''); setNewLeagueIsPublic(false); setNewLeagueDescription(''); setNewLeaguePunishment('');
       await loadData();
     }
   };
@@ -579,7 +588,7 @@ export default function App() {
             </div>
           )}
 
-          <div className="mt-5 bg-white/10 p-4 rounded-2xl border border-white/10 backdrop-blur-md">
+          <div className="mt-5 bg-white/10 p-4 rounded-2xl border border-white/10 backdrop-blur-md flex flex-col gap-3">
             <div className="flex items-start gap-3">
               <Award className="w-6 h-6 text-yellow-400 flex-shrink-0" />
               <div>
@@ -587,6 +596,17 @@ export default function App() {
                 <p className="text-sm text-slate-200 mt-1">{activeLeague.prize}</p>
               </div>
             </div>
+            {activeLeague.punishment && (
+              <div className="flex items-start gap-3 pt-3 border-t border-white/10">
+                <div className="w-6 h-6 flex items-center justify-center bg-red-500/20 text-red-400 rounded-full flex-shrink-0">
+                  <span className="text-sm font-bold">!</span>
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-red-400">Castigo</p>
+                  <p className="text-sm text-slate-200 mt-1">{activeLeague.punishment}</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -716,6 +736,10 @@ export default function App() {
                       <input type="text" required value={newLeaguePrize} onChange={(e) => setNewLeaguePrize(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl font-bold outline-none" />
                     </div>
                     <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Castigo (Opcional)</label>
+                      <input type="text" placeholder="Ej: Paga la cena" value={newLeaguePunishment} onChange={(e) => setNewLeaguePunishment(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl font-bold outline-none" />
+                    </div>
+                    <div className="col-span-2">
                       <label className="block text-sm font-bold text-slate-700 mb-2">Fecha de fin</label>
                       <input type="date" required value={newLeagueEndDate} onChange={(e) => setNewLeagueEndDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl font-bold outline-none" />
                     </div>
