@@ -33,8 +33,11 @@ CREATE TABLE IF NOT EXISTS leagues (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   name TEXT NOT NULL,
   code TEXT UNIQUE NOT NULL,
+  description TEXT,
+  punishment TEXT,
   end_date DATE NOT NULL,
   prize TEXT NOT NULL,
+  is_public BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
