@@ -67,6 +67,8 @@ export default function App() {
   const [leagueModalTab, setLeagueModalTab] = useState('join');
   const [joinCode, setJoinCode] = useState('');
   const [joinError, setJoinError] = useState('');
+  const [showEditLeagueModal, setShowEditLeagueModal] = useState(false);
+  const [showDescriptionModal, setShowDescriptionModal] = useState(false);
   const [newLeagueName, setNewLeagueName] = useState('');
   const [newLeaguePrize, setNewLeaguePrize] = useState('');
   const [newLeagueEndDate, setNewLeagueEndDate] = useState('');
@@ -108,6 +110,7 @@ export default function App() {
               name: l.name,
               code: l.code,
               description: l.description || '',
+              rawEndDate: l.end_date,
               endDate: d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }),
               prize: l.prize,
               punishment: l.punishment || '',
@@ -451,6 +454,49 @@ export default function App() {
     }
   };
 
+  const openEditLeague = () => {
+    const lg = leagues.find(l => l.id === activeLeagueId);
+    if (!lg) return;
+    setNewLeagueName(lg.name);
+    setNewLeaguePrize(lg.prize);
+    setNewLeagueEndDate(lg.rawEndDate || '');
+    setNewLeagueIsPublic(lg.isPublic);
+    setNewLeagueDescription(lg.description || '');
+    setNewLeaguePunishment(lg.punishment || '');
+    setShowEditLeagueModal(true);
+  };
+
+  const handleUpdateLeague = async (e) => {
+    e.preventDefault();
+    const { error } = await supabase.from('leagues').update({
+      name: newLeagueName,
+      description: newLeagueDescription,
+      punishment: newLeaguePunishment,
+      end_date: newLeagueEndDate,
+      prize: newLeaguePrize,
+      is_public: newLeagueIsPublic
+    }).eq('id', activeLeagueId);
+
+    if (error) {
+      alert("Error al actualizar la liga: " + error.message);
+      return;
+    }
+    setShowEditLeagueModal(false);
+    await loadData();
+  };
+
+  const handleDeleteLeague = async () => {
+    if (!window.confirm("¿Seguro que quieres eliminar esta liga de forma definitiva? Esta acción es irreversible y eliminará todos los puntos de todos los participantes dentro de ella.")) return;
+    const { error } = await supabase.from('leagues').delete().eq('id', activeLeagueId);
+    if (!error) {
+      setShowEditLeagueModal(false);
+      setActiveLeagueId('');
+      await loadData();
+    } else {
+      alert("Error al eliminar la liga: " + error.message);
+    }
+  };
+
   if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><div className="text-indigo-600 font-bold">Cargando GymRat...</div></div>;
   if (!user) return <Auth />;
 
@@ -579,12 +625,20 @@ export default function App() {
             <span className="bg-indigo-500 text-xs font-bold px-2 py-1 rounded-md uppercase tracking-wider">{activeLeague.isPublic ? 'Pública' : 'Privada'}</span>
             <span className="text-xs font-mono text-slate-400 bg-white/10 px-2 py-1 rounded-md">Cód: {activeLeague.code}</span>
           </div>
-          <h1 className="text-2xl font-black mt-3 mb-1">{activeLeague.name}</h1>
+          <div className="flex justify-between items-center mt-3 mb-1">
+            <h1 className="text-2xl font-black">{activeLeague.name}</h1>
+            {activeLeague.id !== 'global' && (
+              <button onClick={openEditLeague} className="text-white/50 hover:text-white transition-colors bg-white/10 p-2 rounded-full">
+                <Settings className="w-4 h-4" />
+              </button>
+            )}
+          </div>
           <p className="text-slate-400 text-sm flex items-center gap-2"><Users className="w-4 h-4" /> {leagueLeaderboard.length} Participantes</p>
 
           {activeLeague.description && (
             <div className="mt-4 bg-white/5 p-3 text-sm text-slate-300 rounded-xl border border-white/10 italic">
-              <p>{activeLeague.description}</p>
+              <p className="line-clamp-2 truncate">{activeLeague.description}</p>
+              <button onClick={() => setShowDescriptionModal(true)} className="text-xs bg-white/10 hover:bg-white/20 px-2 py-1 rounded mt-2 font-bold transition-colors">Ver reglas completas</button>
             </div>
           )}
 
@@ -613,7 +667,10 @@ export default function App() {
         <div>
           <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center justify-between">
             Clasificación
-            <span className="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-1 rounded-full">Fin: {activeLeague.endDate}</span>
+            <span className="text-xs font-bold text-indigo-700 bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm">
+              <Clock className="w-3.5 h-3.5" />
+              Termina el {activeLeague.endDate}
+            </span>
           </h2>
 
           <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
@@ -667,6 +724,72 @@ export default function App() {
           {activeTab === 'home' && <HomeView />}
           {activeTab === 'league' && <LeagueView />}
         </main>
+
+        {showDescriptionModal && activeLeagueId && leagues.find(l => l.id === activeLeagueId) && (
+          <div className="absolute inset-0 z-50 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200 flex flex-col justify-end">
+            <div className="bg-white rounded-t-3xl shadow-xl w-full max-h-[80vh] flex flex-col animate-in slide-in-from-bottom-full duration-300">
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-3xl">
+                <h2 className="text-xl font-bold text-slate-800">Reglas de la Liga</h2>
+                <button onClick={() => setShowDescriptionModal(false)} className="text-slate-400 hover:text-slate-700 bg-white shadow-sm p-2 rounded-full"><X className="w-5 h-5" /></button>
+              </div>
+              <div className="p-6 overflow-y-auto">
+                <p className="text-slate-600 whitespace-pre-wrap leading-relaxed">{leagues.find(l => l.id === activeLeagueId).description}</p>
+              </div>
+              <div className="p-6 bg-slate-50 border-t border-slate-100 pb-8">
+                <button onClick={() => setShowDescriptionModal(false)} className="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-colors">Entendido</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showEditLeagueModal && activeLeagueId && leagues.find(l => l.id === activeLeagueId) && (
+          <div className="absolute inset-0 z-50 bg-white animate-in slide-in-from-bottom-full duration-300 flex flex-col">
+            <div className="p-6 bg-slate-900 text-white flex justify-between items-center rounded-b-3xl shadow-lg">
+              <h2 className="text-xl font-bold">Editar Liga</h2>
+              <button onClick={() => setShowEditLeagueModal(false)} className="text-slate-300 hover:text-white bg-white/10 p-2 rounded-full"><X className="w-6 h-6" /></button>
+            </div>
+            <div className="p-6 flex-1 flex flex-col overflow-y-auto">
+              <form onSubmit={handleUpdateLeague} className="flex flex-col gap-6 flex-1">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Nombre de la liga</label>
+                  <input type="text" required value={newLeagueName} onChange={(e) => setNewLeagueName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl font-bold outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Descripción o Reglas (Opcional)</label>
+                  <textarea placeholder="Ej: Puntos dobles los domingos..." value={newLeagueDescription} onChange={(e) => setNewLeagueDescription(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl font-medium outline-none text-sm min-h-[80px]" />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Privacidad de la liga</label>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => setNewLeagueIsPublic(false)} className={`flex-1 py-3 text-sm font-bold rounded-xl border ${!newLeagueIsPublic ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200 text-slate-500'}`}>Privada (Código)</button>
+                    <button type="button" onClick={() => setNewLeagueIsPublic(true)} className={`flex-1 py-3 text-sm font-bold rounded-xl border ${newLeagueIsPublic ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200 text-slate-500'}`}>Pública</button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Premio</label>
+                    <input type="text" required value={newLeaguePrize} onChange={(e) => setNewLeaguePrize(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl font-bold outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Castigo (Opcional)</label>
+                    <input type="text" placeholder="Ej: Paga la cena" value={newLeaguePunishment} onChange={(e) => setNewLeaguePunishment(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl font-bold outline-none" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Fecha de fin</label>
+                    <input type="date" required value={newLeagueEndDate} onChange={(e) => setNewLeagueEndDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl font-bold outline-none" />
+                  </div>
+                </div>
+
+                <div className="mt-auto flex flex-col gap-3 pt-6 border-t border-slate-100">
+                  <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg">Guardar Cambios</button>
+                  <button type="button" onClick={handleDeleteLeague} className="w-full bg-red-50 text-red-600 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 border border-red-100">
+                    <Trash2 className="w-5 h-5" /> Eliminar Liga
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {showCreateLeagueModal && (
           <div className="absolute inset-0 z-50 bg-white animate-in slide-in-from-bottom-full duration-300 flex flex-col">
