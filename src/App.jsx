@@ -43,7 +43,7 @@ export default function App() {
   const [activityDate, setActivityDate] = useState(getDefaultDate());
 
   const [distance, setDistance] = useState('');
-  const [exercises, setExercises] = useState([{ id: 1, name: '', sets: 3, reps: 10, weight: '' }]);
+  const [exercises, setExercises] = useState([{ id: 1, name: '', type: 'strength', sets: 3, reps: 10, weight: '' }]);
   const [photo, setPhoto] = useState(null);
 
   // Estados para rutinas de gimnasio
@@ -208,7 +208,7 @@ export default function App() {
 
   useEffect(() => {
     setDistance('');
-    setExercises([{ id: 1, name: '', sets: 3, reps: 10, weight: '' }]);
+    setExercises([{ id: 1, name: '', type: 'strength', sets: 3, reps: 10, weight: '' }]);
     setRoutineName('');
     setSelectedRoutineId('');
     if (!showLogModal) setActivityDate(getDefaultDate());
@@ -222,7 +222,7 @@ export default function App() {
       case 'cycling': pts = dist * 4; break;
       case 'swimming': pts = (dist / 100) * 5; break;
       case 'gym':
-        const totalSets = exercises.reduce((acc, curr) => acc + (parseInt(curr.sets) || 0), 0);
+        const totalSets = exercises.reduce((acc, curr) => acc + (curr.type === 'cardio' ? 0 : (parseInt(curr.sets) || 0)), 0);
         pts = (duration * 1) + (totalSets * 2);
         break;
       case 'playbacks': pts = duration * 0.5; break;
@@ -232,7 +232,8 @@ export default function App() {
     return Math.floor(pts);
   };
 
-  const addExercise = () => setExercises([...exercises, { id: Date.now(), name: '', sets: 3, reps: 10, weight: '' }]);
+  const addExercise = () => setExercises([...exercises, { id: Date.now(), name: '', type: 'strength', sets: 3, reps: 10, weight: '' }]);
+  const addCardioExercise = () => setExercises([...exercises, { id: Date.now(), name: '', type: 'cardio', duration: 10, distance: '' }]);
   const removeExercise = (id) => { if (exercises.length > 1) setExercises(exercises.filter(ex => ex.id !== id)); };
   const updateExercise = (id, field, value) => setExercises(exercises.map(ex => ex.id === id ? { ...ex, [field]: value } : ex));
 
@@ -241,11 +242,11 @@ export default function App() {
     if (routineId) {
       const routine = savedRoutines.find(r => r.id === routineId);
       if (routine) {
-        setExercises(routine.exercises.map(ex => ({ ...ex, id: Date.now() + Math.random() })));
+        setExercises(routine.exercises.map(ex => ({ ...ex, id: Date.now() + Math.random(), type: ex.type || 'strength' })));
         setRoutineName(routine.name);
       }
     } else {
-      setExercises([{ id: Date.now(), name: '', sets: 3, reps: 10, weight: '' }]);
+      setExercises([{ id: Date.now(), name: '', type: 'strength', sets: 3, reps: 10, weight: '' }]);
       setRoutineName('');
     }
   };
@@ -260,10 +261,18 @@ export default function App() {
 
       let detailsText = '';
       if (selectedSport.id === 'gym') {
-        const totalSets = exercises.reduce((acc, curr) => acc + (parseInt(curr.sets) || 0), 0);
+        const totalSets = exercises.reduce((acc, curr) => acc + (curr.type === 'cardio' ? 0 : (parseInt(curr.sets) || 0)), 0);
+        const strengthExCount = exercises.filter(ex => ex.type !== 'cardio').length;
+        const cardioExCount = exercises.filter(ex => ex.type === 'cardio').length;
+
+        let exText = [];
+        if (strengthExCount > 0) exText.push(`${strengthExCount} ej (${totalSets} series)`);
+        if (cardioExCount > 0) exText.push(`${cardioExCount} cardio`);
+        const summaryText = exText.join(', ');
+
         detailsText = routineName.trim() !== ''
-          ? `${routineName} (${exercises.length} ej, ${totalSets} series)`
-          : `${exercises.length} ejercicios, ${totalSets} series`;
+          ? `${routineName} (${summaryText})`
+          : summaryText.charAt(0).toUpperCase() + summaryText.slice(1);
 
         // Guardar o Actualizar Rutina en Supabase
         if (routineName.trim() !== '') {
@@ -933,17 +942,27 @@ export default function App() {
                     <div className="space-y-3">
                       {exercises.map((ex) => (
                         <div key={ex.id} className="bg-white border border-slate-200 p-3 rounded-xl relative group">
-                          <input type="text" placeholder="Nombre (ej: Press Banca)" value={ex.name} onChange={(e) => updateExercise(ex.id, 'name', e.target.value)} className="w-full bg-transparent font-semibold outline-none mb-3" required />
-                          <div className="grid grid-cols-3 gap-2">
-                            <div><label className="text-[10px] text-slate-400 font-bold">Series</label><input type="number" min="1" value={ex.sets} onChange={(e) => updateExercise(ex.id, 'sets', e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-lg p-2 text-center font-bold" required /></div>
-                            <div><label className="text-[10px] text-slate-400 font-bold">Reps</label><input type="number" min="1" value={ex.reps} onChange={(e) => updateExercise(ex.id, 'reps', e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-lg p-2 text-center font-bold" required /></div>
-                            <div><label className="text-[10px] text-slate-400 font-bold">Peso</label><input type="number" min="0" placeholder="0" value={ex.weight} onChange={(e) => updateExercise(ex.id, 'weight', e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-lg p-2 text-center font-bold" /></div>
-                          </div>
+                          <input type="text" placeholder={ex.type === 'cardio' ? "Cardio (ej: Cinta)" : "Nombre (ej: Press Banca)"} value={ex.name} onChange={(e) => updateExercise(ex.id, 'name', e.target.value)} className="w-full bg-transparent font-semibold outline-none mb-3" required />
+                          {ex.type === 'cardio' ? (
+                            <div className="grid grid-cols-2 gap-2">
+                              <div><label className="text-[10px] text-slate-400 font-bold">Minutos</label><input type="number" min="1" value={ex.duration || 10} onChange={(e) => updateExercise(ex.id, 'duration', e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-lg p-2 text-center font-bold" required /></div>
+                              <div><label className="text-[10px] text-slate-400 font-bold">Distancia (opc.)</label><input type="text" placeholder="Ej: 2km" value={ex.distance || ''} onChange={(e) => updateExercise(ex.id, 'distance', e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-lg p-2 text-center font-bold" /></div>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-3 gap-2">
+                              <div><label className="text-[10px] text-slate-400 font-bold">Series</label><input type="number" min="1" value={ex.sets} onChange={(e) => updateExercise(ex.id, 'sets', e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-lg p-2 text-center font-bold" required /></div>
+                              <div><label className="text-[10px] text-slate-400 font-bold">Reps</label><input type="number" min="1" value={ex.reps} onChange={(e) => updateExercise(ex.id, 'reps', e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-lg p-2 text-center font-bold" required /></div>
+                              <div><label className="text-[10px] text-slate-400 font-bold">Peso</label><input type="number" min="0" placeholder="0" value={ex.weight} onChange={(e) => updateExercise(ex.id, 'weight', e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-lg p-2 text-center font-bold" /></div>
+                            </div>
+                          )}
                           {exercises.length > 1 && <button type="button" onClick={() => removeExercise(ex.id)} className="absolute -top-2 -right-2 bg-red-100 text-red-500 p-1.5 rounded-full"><Trash2 className="w-3 h-3" /></button>}
                         </div>
                       ))}
                     </div>
-                    <button type="button" onClick={addExercise} className="mt-3 w-full border-2 border-dashed border-slate-200 text-slate-500 font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2"><PlusCircle className="w-4 h-4" /> Añadir ejercicio</button>
+                    <div className="flex gap-2 mt-3">
+                      <button type="button" onClick={addExercise} className="flex-1 border-2 border-dashed border-slate-200 text-slate-500 font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2"><PlusCircle className="w-4 h-4" /> Añadir pesas</button>
+                      <button type="button" onClick={addCardioExercise} className="flex-1 border-2 border-dashed border-slate-200 text-slate-500 font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2"><Activity className="w-4 h-4" /> Añadir cardio</button>
+                    </div>
                   </div>
                 )}
               </div>
