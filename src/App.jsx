@@ -93,6 +93,12 @@ export default function App() {
         const hasSeen = localStorage.getItem(`onboardingCompleted_${user.id}`);
         if (!hasSeen) {
           setShowOnboarding(true);
+          // Only show leagues step if user has no leagues except 'global'
+          if (Object.keys(currentUser.leaguePoints || {}).filter(id => id !== 'global').length > 0) {
+            setOnboardingStep('pwa');
+          } else {
+            setOnboardingStep(1);
+          }
         }
       });
     }
@@ -1266,14 +1272,17 @@ export default function App() {
         </nav>
 
         {showOnboarding && onboardingStep === 1 && (
-          <div className="absolute inset-0 z-[100] bg-white animate-in slide-in-from-bottom-full duration-300 flex flex-col">
-            <div className="p-6 bg-slate-900 text-white flex justify-between items-center rounded-b-3xl shadow-lg">
-              <h2 className="text-xl font-bold">¡Bienvenido a GymRat!</h2>
-              <button onClick={skipOnboarding} className="text-sm text-slate-300 font-bold hover:text-white">Omitir</button>
+          <div className="absolute inset-0 z-[100] bg-indigo-600 animate-in slide-in-from-bottom-full duration-300 flex flex-col pt-10 px-6">
+            <div className="text-white flex justify-between items-start pb-8">
+              <div>
+                <span className="bg-white/20 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full tracking-wider">Paso 1 de 2</span>
+                <h2 className="text-3xl font-black mt-3 leading-tight">Tu primera<br />Liga 🏆</h2>
+              </div>
+              <button onClick={() => setOnboardingStep('pwa')} className="text-xs bg-white/10 text-white font-bold px-4 py-2 rounded-xl hover:bg-white/20 transition-colors">Saltar paso</button>
             </div>
 
-            <div className="p-6 flex-1 flex flex-col overflow-y-auto">
-              <p className="font-medium text-slate-600 mb-6 text-center text-sm">Para empezar a competir, necesitas unirte a una liga o crear la tuya propia. 🔥</p>
+            <div className="flex-1 flex flex-col bg-white rounded-t-3xl shadow-[0_-20px_40px_-20px_rgba(0,0,0,0.3)] mt-2 -mx-6 px-6 pt-6 overflow-y-auto">
+              <p className="font-medium text-slate-500 mb-6 text-sm text-center">Para empezar a competir, necesitas unirte a una liga con tus amigos o crear la tuya propia.</p>
 
               <div className="flex bg-slate-100 p-1 rounded-xl mb-6 flex-shrink-0">
                 <button type="button" onClick={() => { setLeagueModalTab('join'); setJoinError(''); }} className={`flex-1 py-2.5 text-sm font-bold rounded-lg ${leagueModalTab === 'join' ? 'bg-white shadow text-indigo-600' : 'text-slate-500'}`}>Unirse con código</button>
@@ -1360,16 +1369,19 @@ export default function App() {
         )}
 
         {showOnboarding && onboardingStep === 'pwa' && (
-          <div className="absolute inset-0 z-[100] bg-white animate-in slide-in-from-bottom-full duration-300 flex flex-col">
-            <div className="p-6 bg-slate-900 text-white flex justify-between items-center rounded-b-3xl shadow-lg">
-              <h2 className="text-xl font-bold">Añadir a Inicio</h2>
-              <button onClick={skipOnboarding} className="text-slate-300 hover:text-white p-2 rounded-full"><X className="w-6 h-6" /></button>
+          <div className="absolute inset-0 z-[100] bg-indigo-600 animate-in slide-in-from-right duration-300 flex flex-col pt-10 px-6">
+            <div className="text-white flex justify-between items-start pb-8">
+              <div>
+                <span className="bg-white/20 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full tracking-wider">Paso 2 de 2</span>
+                <h2 className="text-3xl font-black mt-3 leading-tight">Instala la<br />App 📱</h2>
+              </div>
+              <button onClick={skipOnboarding} className="text-xs bg-white/10 text-white font-bold px-4 py-2 rounded-xl hover:bg-white/20 transition-colors">Omitir todo</button>
             </div>
 
-            <div className="flex-1 flex flex-col pt-8 pb-32 px-6 overflow-hidden relative">
-              <div className="text-center mb-6">
-                <h3 className="font-bold text-indigo-600 mb-1">Paso {pwaSlide + 1} de 3</h3>
-                <h2 className="text-2xl font-black text-slate-800">Usa GymRat como App</h2>
+            <div className="flex-1 flex flex-col bg-white rounded-t-3xl shadow-[0_-20px_40px_-20px_rgba(0,0,0,0.3)] mt-2 -mx-6 px-6 pt-6 pb-32 relative">
+              <div className="text-center mb-4">
+                <h3 className="font-bold text-indigo-600 mb-1">Captura {pwaSlide + 1} de 3</h3>
+                <p className="text-slate-500 text-sm font-medium">Sigue estas instrucciones para tener GymRat en tu pantalla de inicio.</p>
               </div>
 
               <div className="flex-1 relative rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-inner flex items-center justify-center p-4">
