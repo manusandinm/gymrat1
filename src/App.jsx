@@ -11,6 +11,7 @@ const SPORTS = [
   { id: 'swimming', name: 'Natación', icon: '🏊‍♂️', color: 'bg-cyan-500', unit: 'm', step: 50 },
   { id: 'playbacks', name: 'Playbacks', icon: '💃', color: 'bg-pink-500' },
   { id: 'rugby', name: 'Rugby', icon: '🏉', color: 'bg-orange-500' },
+  { id: 'b3b', name: 'B3B', icon: '🥊', color: 'bg-red-500' },
 ];
 
 export default function App() {
@@ -216,17 +217,31 @@ export default function App() {
 
   const calculatePoints = () => {
     let pts = 0;
+    const baseHourRate = (rate) => rate * (duration / 60);
     const dist = parseFloat(distance) || 0;
     switch (selectedSport.id) {
-      case 'running': pts = dist * 10; break;
-      case 'cycling': pts = dist * 4; break;
-      case 'swimming': pts = (dist / 100) * 5; break;
+      case 'running':
+        pts = baseHourRate(20) + (dist * 5);
+        break;
+      case 'cycling':
+        pts = baseHourRate(20) + (dist * 2.5);
+        break;
+      case 'swimming':
+        pts = baseHourRate(20) + ((dist / 100) * 3);
+        break;
       case 'gym':
         const totalSets = exercises.reduce((acc, curr) => acc + (curr.type === 'cardio' ? 0 : (parseInt(curr.sets) || 0)), 0);
-        pts = (duration * 1) + (totalSets * 2);
+        pts = baseHourRate(20) + (totalSets * 2);
         break;
-      case 'playbacks': pts = duration * 0.5; break;
-      case 'rugby': pts = duration * 0.8; break;
+      case 'playbacks':
+        pts = baseHourRate(30);
+        break;
+      case 'rugby':
+        pts = baseHourRate(50);
+        break;
+      case 'b3b':
+        pts = baseHourRate(60);
+        break;
       default: pts = 0;
     }
     return Math.floor(pts);
