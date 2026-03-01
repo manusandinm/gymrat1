@@ -1369,7 +1369,7 @@ export default function App() {
         )}
 
         {showOnboarding && onboardingStep === 'pwa' && (
-          <div className="absolute inset-0 z-[100] bg-indigo-600 animate-in slide-in-from-right duration-300 flex flex-col pt-6 px-6 overflow-hidden">
+          <div className="absolute inset-0 z-[100] bg-indigo-600 animate-in slide-in-from-right duration-300 flex flex-col justify-start pt-6 px-6 overflow-y-auto">
             <div className="flex-shrink-0 text-white flex justify-between items-start pb-4">
               <div>
                 <span className="bg-white/20 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full tracking-wider">Paso 2 de 2</span>
@@ -1378,26 +1378,25 @@ export default function App() {
               <button onClick={skipOnboarding} className="text-xs bg-white/10 text-white font-bold px-4 py-2 rounded-xl hover:bg-white/20 transition-colors">Omitir todo</button>
             </div>
 
-            <div className="flex-1 flex flex-col bg-white rounded-t-3xl shadow-[0_-20px_40px_-20px_rgba(0,0,0,0.3)] mt-2 -mx-6 px-6 pt-5 pb-24 relative overflow-hidden">
-              <div className="text-center mb-3 flex-shrink-0">
+            <div className="bg-white rounded-3xl shadow-[0_20px_40px_-20px_rgba(0,0,0,0.3)] mt-2 mb-8 px-5 pt-5 pb-5 h-auto flex flex-col items-center">
+              <div className="text-center mb-4">
                 <h3 className="font-bold text-indigo-600 mb-1">Captura {pwaSlide + 1} de 3</h3>
                 <p className="text-slate-500 text-xs font-medium leading-tight">Sigue estas instrucciones para tener GymRat en tu pantalla de inicio.</p>
               </div>
 
-              <div className="flex-1 relative rounded-2xl overflow-hidden bg-slate-50 flex items-center justify-center p-2 mb-2">
+              <div className="w-full relative rounded-2xl overflow-hidden bg-slate-50 flex items-center justify-center p-2 mb-5 h-auto max-h-[50vh]">
                 {pwaSlide === 0 && <img src="/install_step_1.png" alt="Paso 1" className="max-w-full max-h-full object-contain rounded-lg" />}
                 {pwaSlide === 1 && <img src="/install_step_2.png" alt="Paso 2" className="max-w-full max-h-full object-contain rounded-lg" />}
                 {pwaSlide === 2 && <img src="/install_step_3.png" alt="Paso 3" className="max-w-full max-h-full object-contain rounded-lg" />}
               </div>
-            </div>
 
-            <div className="absolute bottom-0 left-0 w-full bg-white p-4 pb-6 border-t border-slate-100 flex flex-col gap-3 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] z-10">
-              <div className="flex justify-center gap-2 mb-1">
-                <div className={`w-2 h-2 rounded-full transition-colors ${pwaSlide === 0 ? 'bg-indigo-600' : 'bg-slate-300'}`}></div>
-                <div className={`w-2 h-2 rounded-full transition-colors ${pwaSlide === 1 ? 'bg-indigo-600' : 'bg-slate-300'}`}></div>
-                <div className={`w-2 h-2 rounded-full transition-colors ${pwaSlide === 2 ? 'bg-indigo-600' : 'bg-slate-300'}`}></div>
+              <div className="w-full flex justify-center gap-2 mb-4">
+                <div className={`w-2 h-2 rounded-full transition-colors ${pwaSlide === 0 ? 'bg-indigo-600' : 'bg-slate-200'}`}></div>
+                <div className={`w-2 h-2 rounded-full transition-colors ${pwaSlide === 1 ? 'bg-indigo-600' : 'bg-slate-200'}`}></div>
+                <div className={`w-2 h-2 rounded-full transition-colors ${pwaSlide === 2 ? 'bg-indigo-600' : 'bg-slate-200'}`}></div>
               </div>
-              <div className="flex gap-3">
+
+              <div className="w-full flex gap-3">
                 {pwaSlide > 0 && <button onClick={() => setPwaSlide(pwaSlide - 1)} className="font-bold py-3 px-5 rounded-2xl text-slate-500 bg-slate-100 text-sm">Atrás</button>}
                 {pwaSlide < 2 ? (
                   <button onClick={() => setPwaSlide(pwaSlide + 1)} className="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-2xl shadow-lg text-sm">Siguiente</button>
