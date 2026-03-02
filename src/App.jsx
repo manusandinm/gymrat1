@@ -12,6 +12,8 @@ const SPORTS = [
   { id: 'playbacks', name: 'Playbacks', icon: '💃', color: 'bg-pink-500' },
   { id: 'rugby', name: 'Rugby', icon: '🏉', color: 'bg-orange-500' },
   { id: 'b3b', name: 'B3B', icon: '🥊', color: 'bg-red-500' },
+  { id: 'esquí', name: 'Esquí', icon: '⛷️', color: 'bg-blue-500' },
+  { id: 'pádel', name: 'Pádel', icon: '🎾', color: 'bg-green-500' },
 ];
 
 export default function App() {
@@ -258,12 +260,18 @@ export default function App() {
         pts = baseHourRate(30);
         break;
       case 'rugby':
-        pts = baseHourRate(50);
+        pts = baseHourRate(40);
         break;
       case 'b3b':
         pts = baseHourRate(60);
         break;
       default: pts = 0;
+      case 'esquí':
+        pts = baseHourRate(5) + (dist * 1.5);
+        break;
+      case 'pádel':
+        pts = baseHourRate(40);
+        break;
     }
     return Math.floor(pts);
   };
