@@ -1070,7 +1070,7 @@ export default function App() {
                 )}
               </div>
 
-              <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center justify-between mt-auto">
+              <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center justify-between">
                 <div>
                   <p className="text-sm text-emerald-700 font-semibold mb-1">Puntos a ganar</p>
                 </div>
