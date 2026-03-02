@@ -12,7 +12,7 @@ const SPORTS = [
   { id: 'playbacks', name: 'Playbacks', icon: '💃', color: 'bg-pink-500' },
   { id: 'rugby', name: 'Rugby', icon: '🏉', color: 'bg-orange-500' },
   { id: 'b3b', name: 'B3B', icon: '🥊', color: 'bg-red-500' },
-  { id: 'esquí', name: 'Esquí', icon: '⛷️', color: 'bg-blue-500' },
+  { id: 'esquí', name: 'Esquí', icon: '⛷️', color: 'bg-blue-500', unit: 'km', step: 1 },
   { id: 'pádel', name: 'Pádel', icon: '🎾', color: 'bg-green-500' },
 ];
 
