@@ -44,7 +44,7 @@ export default function ProfileModal({
                 <div className="flex flex-col items-center gap-3">
                     <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg bg-indigo-100 flex items-center justify-center text-4xl">
                         {(editAvatar.startsWith('data:image') || editAvatar.startsWith('http')) ? (
-                            <img src={editAvatar} alt="avatar" className="w-full h-full object-cover" />
+                            <img src={editAvatar} alt="avatar" className="w-full h-full object-cover object-center" />
                         ) : (
                             editAvatar
                         )}

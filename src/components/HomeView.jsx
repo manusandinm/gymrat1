@@ -103,7 +103,7 @@ export default function HomeView({ currentUser, globalLeaderboard, activities, u
                                     {/* Foto adjunta (si existe) */}
                                     {act.photo && (
                                         <div className="mt-1 rounded-xl overflow-hidden border border-slate-100 relative max-h-48">
-                                            <img src={act.photo} alt="Prueba de entrenamiento" className="w-full h-full object-cover" />
+                                            <img src={act.photo} alt="Prueba de entrenamiento" className="w-full h-full object-cover object-center" />
                                         </div>
                                     )}
                                 </div>

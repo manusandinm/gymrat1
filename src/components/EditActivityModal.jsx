@@ -118,7 +118,7 @@ export default function EditActivityModal({ activity, onSave, onClose }) {
                         </label>
                     ) : (
                         <div className="relative rounded-xl overflow-hidden h-40">
-                            <img src={editPhoto} alt="Preview" className="w-full h-full object-cover" />
+                            <img src={editPhoto} alt="Preview" className="w-full h-full object-cover object-center" />
                             <button type="button" onClick={() => setEditPhoto(null)} className="absolute top-2 right-2 bg-slate-900/60 p-1.5 rounded-full text-white">
                                 <X className="w-4 h-4" />
                             </button>

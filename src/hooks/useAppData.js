@@ -216,16 +216,7 @@ export function useAppData(user) {
      *
      * @param {Object} params - Datos de la actividad a registrar.
      */
-    const handleLogActivity = async ({ sport, duration, points, detailsText, photoUrl, activityDate, exercises, routineName }) => {
-        // Guardar o actualizar rutina si tiene nombre
-        if (sport.id === 'gym' && routineName.trim() !== '') {
-            const existing = savedRoutines.find(r => r.name.toLowerCase() === routineName.trim().toLowerCase());
-            if (existing) {
-                await supabase.from('routines').update({ exercises }).eq('id', existing.id);
-            } else {
-                await supabase.from('routines').insert({ user_id: user.id, name: routineName.trim(), exercises });
-            }
-        }
+    const handleLogActivity = async ({ sport, duration, points, detailsText, photoUrl, activityDate }) => {
 
         // Insertar actividad
         await supabase.from('activities').insert({

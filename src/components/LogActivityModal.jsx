@@ -26,7 +26,7 @@ import { resizeImage } from '../utils/imageUtils';
  * Calcula los puntos que se obtendrán según el deporte, la duración,
  * la distancia y los ejercicios registrados.
  */
-function calculatePoints(sport, duration, distance, exercises) {
+function calculatePoints(sport, duration, distance, exercises, gymIntensity = 'media') {
     let pts = 0;
     const baseHourRate = (rate) => rate * (duration / 60);
     const dist = parseFloat(distance) || 0;
@@ -35,9 +35,8 @@ function calculatePoints(sport, duration, distance, exercises) {
         case 'cycling': pts = baseHourRate(20) + (dist * 2.5); break;
         case 'swimming': pts = baseHourRate(20) + ((dist / 100) * 3); break;
         case 'gym': {
-            const totalSets = exercises.reduce((acc, curr) =>
-                acc + (curr.type === 'cardio' ? 0 : (parseInt(curr.sets) || 0)), 0);
-            pts = baseHourRate(20) + (totalSets * 2);
+            const intensityMultiplier = gymIntensity === 'baja' ? 1.5 : gymIntensity === 'media' ? 2 : 2.5;
+            pts = baseHourRate(20 * intensityMultiplier);
             break;
         }
         case 'playbacks': pts = baseHourRate(30); break;
@@ -61,53 +60,23 @@ export default function LogActivityModal({ sports, savedRoutines, onSubmit, onCl
     const [duration, setDuration] = useState(45);
     const [activityDate, setActivityDate] = useState(getDefaultDate());
     const [distance, setDistance] = useState('');
-    const [exercises, setExercises] = useState([{ id: 1, name: '', type: 'strength', sets: 3, reps: 10, weight: '' }]);
+    const [exercises, setExercises] = useState([]);
+    const [gymTrainingName, setGymTrainingName] = useState('');
+    const [gymIntensity, setGymIntensity] = useState('media');
     const [photo, setPhoto] = useState(null);
-    const [routineName, setRoutineName] = useState('');
-    const [selectedRoutineId, setSelectedRoutineId] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Reiniciar campos al cambiar de deporte
     useEffect(() => {
         setDistance('');
-        setExercises([{ id: 1, name: '', type: 'strength', sets: 3, reps: 10, weight: '' }]);
-        setRoutineName('');
-        setSelectedRoutineId('');
+        setExercises([]);
+        setGymTrainingName('');
+        setGymIntensity('media');
     }, [selectedSport]);
-
-    // ─── Gestión de ejercicios ──────────────────────────────────────────
-    const addExercise = () => setExercises([...exercises, { id: Date.now(), name: '', type: 'strength', sets: 3, reps: 10, weight: '' }]);
-    const addCardioExercise = () => setExercises([...exercises, { id: Date.now(), name: '', type: 'cardio', duration: 10, distance: '' }]);
-    const removeExercise = (id) => { if (exercises.length > 1) setExercises(exercises.filter(ex => ex.id !== id)); };
-    const updateExercise = (id, field, value) => setExercises(exercises.map(ex => ex.id === id ? { ...ex, [field]: value } : ex));
-
-    const handleLoadRoutine = (routineId) => {
-        setSelectedRoutineId(routineId);
-        if (routineId) {
-            const routine = savedRoutines.find(r => r.id === routineId);
-            if (routine) {
-                setExercises(routine.exercises.map(ex => ({ ...ex, id: Date.now() + Math.random(), type: ex.type || 'strength' })));
-                setRoutineName(routine.name);
-            }
-        } else {
-            setExercises([{ id: Date.now(), name: '', type: 'strength', sets: 3, reps: 10, weight: '' }]);
-            setRoutineName('');
-        }
-    };
 
     // ─── Cálculo de detalles para guardar en BD ─────────────────────────
     const buildDetailsText = () => {
         if (selectedSport.id === 'gym') {
-            const totalSets = exercises.reduce((acc, curr) => acc + (curr.type === 'cardio' ? 0 : (parseInt(curr.sets) || 0)), 0);
-            const strengthExCount = exercises.filter(ex => ex.type !== 'cardio').length;
-            const cardioExCount = exercises.filter(ex => ex.type === 'cardio').length;
-            let exText = [];
-            if (strengthExCount > 0) exText.push(`${strengthExCount} ej (${totalSets} series)`);
-            if (cardioExCount > 0) exText.push(`${cardioExCount} cardio`);
-            const summaryText = exText.join(', ');
-            return routineName.trim() !== ''
-                ? `${routineName} (${summaryText})`
-                : summaryText.charAt(0).toUpperCase() + summaryText.slice(1);
+            return `${gymTrainingName || 'Entrenamiento de gimnasio'} (Intensidad ${gymIntensity})`;
         }
         if (selectedSport.unit) return `${distance} ${selectedSport.unit}`;
         return `${duration} minutos`;
@@ -119,7 +88,7 @@ export default function LogActivityModal({ sports, savedRoutines, onSubmit, onCl
         if (isSubmitting) return;
         setIsSubmitting(true);
         try {
-            const points = calculatePoints(selectedSport, duration, distance, exercises);
+            const points = calculatePoints(selectedSport, duration, distance, exercises, gymIntensity);
             await onSubmit({
                 sport: selectedSport,
                 duration,
@@ -127,8 +96,8 @@ export default function LogActivityModal({ sports, savedRoutines, onSubmit, onCl
                 detailsText: buildDetailsText(),
                 photoUrl: photo,
                 activityDate,
-                exercises,
-                routineName
+                gymTrainingName,
+                gymIntensity
             });
             onClose();
         } catch (err) {
@@ -138,7 +107,7 @@ export default function LogActivityModal({ sports, savedRoutines, onSubmit, onCl
         }
     };
 
-    const points = calculatePoints(selectedSport, duration, distance, exercises);
+    const points = calculatePoints(selectedSport, duration, distance, exercises, gymIntensity);
 
     return (
         <div className="absolute inset-0 z-50 bg-white animate-in slide-in-from-bottom-full duration-300 flex flex-col">
@@ -160,8 +129,8 @@ export default function LogActivityModal({ sports, savedRoutines, onSubmit, onCl
                                 type="button"
                                 onClick={() => setSelectedSport(sport)}
                                 className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 ${selectedSport.id === sport.id
-                                        ? `border-${sport.color.split('-')[1]}-500 bg-${sport.color.split('-')[1]}-50`
-                                        : 'border-slate-100 bg-white'
+                                    ? `border-${sport.color.split('-')[1]}-500 bg-${sport.color.split('-')[1]}-50`
+                                    : 'border-slate-100 bg-white'
                                     }`}
                             >
                                 <span className="text-3xl">{sport.icon}</span>
@@ -220,92 +189,37 @@ export default function LogActivityModal({ sports, savedRoutines, onSubmit, onCl
                         </div>
                     )}
 
-                    {/* Ejercicios de gimnasio */}
+                    {/* Detalles de gimnasio */}
                     {selectedSport.id === 'gym' && (
-                        <div>
-                            {/* Selector de rutina guardada */}
-                            {savedRoutines.length > 0 && (
-                                <div className="mb-4 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
-                                    <label className="block text-[10px] font-bold text-indigo-500 mb-1.5 uppercase tracking-wider">Cargar rutina</label>
-                                    <select
-                                        value={selectedRoutineId}
-                                        onChange={e => handleLoadRoutine(e.target.value)}
-                                        className="w-full bg-white border border-indigo-100 px-3 py-2.5 rounded-lg text-sm font-bold outline-none cursor-pointer"
-                                    >
-                                        <option value="">-- Empezar de cero --</option>
-                                        {savedRoutines.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                                    </select>
-                                </div>
-                            )}
-
-                            {/* Nombre de la rutina (para guardarla) */}
-                            <div className="mb-4 relative group">
-                                <Bookmark className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-2">Nombre del entrenamiento</label>
                                 <input
                                     type="text"
-                                    placeholder='Nombre (Ej: "Día 1 - Pierna")'
-                                    value={routineName}
-                                    onChange={e => setRoutineName(e.target.value)}
-                                    className="w-full bg-white border border-slate-200 pl-10 pr-3 py-2.5 rounded-xl text-sm font-bold outline-none"
+                                    placeholder='Ej: "Upper Body", "Pierna", etc.'
+                                    value={gymTrainingName}
+                                    onChange={e => setGymTrainingName(e.target.value)}
+                                    className="w-full bg-white border border-slate-200 px-4 py-3 rounded-xl text-sm font-bold outline-none"
+                                    required
                                 />
                             </div>
-
-                            {/* Lista de ejercicios */}
-                            <div className="space-y-3">
-                                {exercises.map(ex => (
-                                    <div key={ex.id} className="bg-white border border-slate-200 p-3 rounded-xl relative group">
-                                        <input
-                                            type="text"
-                                            placeholder={ex.type === 'cardio' ? 'Cardio (ej: Cinta)' : 'Nombre (ej: Press Banca)'}
-                                            value={ex.name}
-                                            onChange={e => updateExercise(ex.id, 'name', e.target.value)}
-                                            className="w-full bg-transparent font-semibold outline-none mb-3"
-                                            required
-                                        />
-                                        {ex.type === 'cardio' ? (
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <div>
-                                                    <label className="text-[10px] text-slate-400 font-bold">Minutos</label>
-                                                    <input type="number" min="1" value={ex.duration || 10} onChange={e => updateExercise(ex.id, 'duration', e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-lg p-2 text-center font-bold" required />
-                                                </div>
-                                                <div>
-                                                    <label className="text-[10px] text-slate-400 font-bold">Distancia (opc.)</label>
-                                                    <input type="text" placeholder="Ej: 2km" value={ex.distance || ''} onChange={e => updateExercise(ex.id, 'distance', e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-lg p-2 text-center font-bold" />
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="grid grid-cols-3 gap-2">
-                                                <div>
-                                                    <label className="text-[10px] text-slate-400 font-bold">Series</label>
-                                                    <input type="number" min="1" value={ex.sets} onChange={e => updateExercise(ex.id, 'sets', e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-lg p-2 text-center font-bold" required />
-                                                </div>
-                                                <div>
-                                                    <label className="text-[10px] text-slate-400 font-bold">Reps</label>
-                                                    <input type="number" min="1" value={ex.reps} onChange={e => updateExercise(ex.id, 'reps', e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-lg p-2 text-center font-bold" required />
-                                                </div>
-                                                <div>
-                                                    <label className="text-[10px] text-slate-400 font-bold">Peso</label>
-                                                    <input type="number" min="0" placeholder="0" value={ex.weight} onChange={e => updateExercise(ex.id, 'weight', e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-lg p-2 text-center font-bold" />
-                                                </div>
-                                            </div>
-                                        )}
-                                        {exercises.length > 1 && (
-                                            <button type="button" onClick={() => removeExercise(ex.id)} className="absolute -top-2 -right-2 bg-red-100 text-red-500 p-1.5 rounded-full">
-                                                <Trash2 className="w-3 h-3" />
-                                            </button>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Botones para añadir ejercicios */}
-                            <div className="flex gap-2 mt-3">
-                                <button type="button" onClick={addExercise} className="flex-1 border-2 border-dashed border-slate-200 text-slate-500 font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2">
-                                    <PlusCircle className="w-4 h-4" /> Añadir pesas
-                                </button>
-                                <button type="button" onClick={addCardioExercise} className="flex-1 border-2 border-dashed border-slate-200 text-slate-500 font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2">
-                                    <Activity className="w-4 h-4" /> Añadir cardio
-                                </button>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-2">Intensidad</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {['baja', 'media', 'alta'].map(level => (
+                                        <button
+                                            key={level}
+                                            type="button"
+                                            onClick={() => setGymIntensity(level)}
+                                            className={`p-3 rounded-xl border-2 text-sm font-bold capitalize transition-colors ${gymIntensity === level
+                                                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                                                    : 'border-slate-100 bg-white text-slate-500'
+                                                }`}
+                                        >
+                                            {level}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     )}
@@ -330,7 +244,7 @@ export default function LogActivityModal({ sports, savedRoutines, onSubmit, onCl
                         </label>
                     ) : (
                         <div className="relative rounded-xl overflow-hidden h-40">
-                            <img src={photo} alt="Preview" className="w-full h-full object-cover" />
+                            <img src={photo} alt="Preview" className="w-full h-full object-cover object-center" />
                             <button type="button" onClick={() => setPhoto(null)} className="absolute top-2 right-2 bg-slate-900/60 p-1.5 rounded-full text-white">
                                 <X className="w-4 h-4" />
                             </button>
