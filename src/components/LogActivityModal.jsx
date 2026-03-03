@@ -35,8 +35,8 @@ function calculatePoints(sport, duration, distance, exercises, gymIntensity = 'm
         case 'cycling': pts = baseHourRate(20) + (dist * 2.5); break;
         case 'swimming': pts = baseHourRate(20) + ((dist / 100) * 3); break;
         case 'gym': {
-            const intensityMultiplier = gymIntensity === 'baja' ? 1.5 : gymIntensity === 'media' ? 2 : 2.5;
-            pts = baseHourRate(20 * intensityMultiplier);
+            const hourlyRate = gymIntensity === 'baja' ? 40 : gymIntensity === 'media' ? 50 : 60;
+            pts = baseHourRate(hourlyRate);
             break;
         }
         case 'playbacks': pts = baseHourRate(30); break;
@@ -212,8 +212,8 @@ export default function LogActivityModal({ sports, savedRoutines, onSubmit, onCl
                                             type="button"
                                             onClick={() => setGymIntensity(level)}
                                             className={`p-3 rounded-xl border-2 text-sm font-bold capitalize transition-colors ${gymIntensity === level
-                                                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                                                    : 'border-slate-100 bg-white text-slate-500'
+                                                ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                                                : 'border-slate-100 bg-white text-slate-500'
                                                 }`}
                                         >
                                             {level}
