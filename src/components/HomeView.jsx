@@ -23,37 +23,51 @@ import { Activity, Clock, Target, Zap, Pencil, Trash2, ChevronLeft, ChevronRight
 
 export default function HomeView({ currentUser, globalLeaderboard, activities, userActivities = [], users, userId, sports, onEditActivity, onDeleteActivity }) {
     const [statsSlide, setStatsSlide] = useState(0); // 0 = calendar, 1 = chart
+    const [viewDate, setViewDate] = useState(new Date());
 
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    const [touchStart, setTouchStart] = useState(null);
+    const [touchEnd, setTouchEnd] = useState(null);
 
-    // Calcular puntos del mes actual
+    const onTouchStart = (e) => {
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+    const onTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
+    const onTouchEndHandler = () => {
+        if (!touchStart || !touchEnd) return;
+        const distance = touchStart - touchEnd;
+        if (distance > 50) setStatsSlide(1);
+        if (distance < -50) setStatsSlide(0);
+    };
+
+    const actualNow = new Date();
+    const actualCurrentMonth = actualNow.getMonth();
+    const actualCurrentYear = actualNow.getFullYear();
+
     const currentMonthPoints = userActivities.reduce((acc, act) => {
         const d = new Date(act.createdAt);
-        if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+        if (d.getMonth() === actualCurrentMonth && d.getFullYear() === actualCurrentYear) {
             return acc + act.points;
         }
         return acc;
     }, 0);
 
-    // Días con actividad este mes (para calendario)
+    const viewMonth = viewDate.getMonth();
+    const viewYear = viewDate.getFullYear();
+
     const daysWithActivity = new Set(
         userActivities
             .filter(act => {
                 const d = new Date(act.createdAt);
-                return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+                return d.getMonth() === viewMonth && d.getFullYear() === viewYear;
             })
             .map(act => new Date(act.createdAt).getDate())
     );
 
-    // Obtener número de días en el mes actual
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    // Obtener el día de la semana que empieza el mes (1 = Lunes, 7 = Domingo)
-    let firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    let firstDayOfMonth = new Date(viewYear, viewMonth, 1).getDay();
     firstDayOfMonth = firstDayOfMonth === 0 ? 7 : firstDayOfMonth;
 
-    // Calcular datos para la gráfica de entrenamientos por mes
     const monthlyWorkouts = {};
     userActivities.forEach(act => {
         const d = new Date(act.createdAt);
@@ -61,64 +75,49 @@ export default function HomeView({ currentUser, globalLeaderboard, activities, u
         monthlyWorkouts[key] = (monthlyWorkouts[key] || 0) + 1;
     });
 
-    const sortedMonths = Object.keys(monthlyWorkouts).sort().slice(-6); // Mostrar hasta los últimos 6 meses
+    const sortedMonths = Object.keys(monthlyWorkouts).sort().slice(-6);
     const maxWorkouts = Math.max(...sortedMonths.map(m => monthlyWorkouts[m]), 1);
+
+    const handlePrevMonth = () => setViewDate(new Date(viewYear, viewMonth - 1, 1));
+    const handleNextMonth = () => setViewDate(new Date(viewYear, viewMonth + 1, 1));
 
     return (
         <div className="space-y-6 pb-20 animate-in fade-in zoom-in-95 duration-200 pt-8">
 
-            {/* ── Tarjeta de puntuación del usuario ── */}
-            <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl p-6 text-white shadow-lg mb-6">
-                <div className="flex justify-between items-center mb-6">
+            {/* ── Tarjeta Principal (Compacta + Stats Swipeables) ── */}
+            <div className="bg-gradient-to-br from-indigo-700 to-purple-800 rounded-3xl pt-5 px-5 pb-4 text-white shadow-lg overflow-hidden relative">
+
+                {/* Cabecera Puntos (Compacta) */}
+                <div className="flex justify-between items-start mb-5">
                     <div>
-                        <p className="text-indigo-100 text-sm font-medium">Hola, {currentUser.name}</p>
-                    </div>
-                    <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
-                        <Zap className="text-yellow-300 w-5 h-5" />
-                    </div>
-                </div>
-
-                {/* Fila única para tu puntuación y su valor, y debajo puntos del mes */}
-                <div className="flex flex-col gap-2 mb-2">
-                    <div className="flex items-center justify-between">
-                        <h1 className="text-lg font-bold text-indigo-100">Puntuación Total</h1>
-                        <div className="text-4xl font-black tracking-tight flex items-baseline gap-1">
-                            {Math.floor(currentUser.totalPoints)} <span className="text-sm font-medium text-indigo-200">pts</span>
+                        <p className="text-white/70 text-[10px] font-bold uppercase mb-0.5 tracking-wider">Puntuación Total</p>
+                        <div className="text-2xl font-black tracking-tight flex items-baseline gap-1">
+                            {Math.floor(currentUser.totalPoints)} <span className="text-xs font-medium text-white/50">pts</span>
                         </div>
                     </div>
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-sm font-medium text-indigo-200">Mes Actual</h2>
-                        <div className="text-xl font-bold tracking-tight text-white/90 flex items-baseline gap-1">
-                            +{Math.floor(currentMonthPoints)} <span className="text-xs font-medium text-indigo-200">pts</span>
+                    <div className="text-right">
+                        <p className="text-white/70 text-[10px] font-bold uppercase mb-0.5 tracking-wider">Mes actual</p>
+                        <div className="text-xl font-bold tracking-tight text-emerald-300 flex items-baseline gap-1 justify-end">
+                            +{Math.floor(currentMonthPoints)} <span className="text-[10px] font-medium text-emerald-300/70">pts</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Distancia al primer puesto */}
-                {globalLeaderboard.length > 0 && currentUser.id !== globalLeaderboard[0].id && (
-                    <div className="bg-white/10 rounded-xl p-3 mt-4 flex items-center text-xs">
-                        <Target className="w-4 h-4 mr-2 text-indigo-200" />
-                        <span>A {Math.floor(globalLeaderboard[0].totalPoints - currentUser.totalPoints)} pts del líder ({globalLeaderboard[0].name})</span>
-                    </div>
-                )}
-            </div>
-
-            {/* ── Tarjeta de Estadísticas (Calendario / Gráfica) ── */}
-            <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 relative mb-6 overflow-hidden">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-sm font-bold text-slate-800">
-                        {statsSlide === 0 ? 'Calendario Mensual' : 'Entrenamientos por Mes'}
-                    </h2>
-                    <div className="flex gap-1">
-                        <button type="button" onClick={() => setStatsSlide(0)} className={`p-1.5 rounded-full transition-colors ${statsSlide === 0 ? 'bg-indigo-100 text-indigo-600' : 'text-slate-400 hover:bg-slate-50'}`}><ChevronLeft className="w-4 h-4" /></button>
-                        <button type="button" onClick={() => setStatsSlide(1)} className={`p-1.5 rounded-full transition-colors ${statsSlide === 1 ? 'bg-indigo-100 text-indigo-600' : 'text-slate-400 hover:bg-slate-50'}`}><ChevronRight className="w-4 h-4" /></button>
-                    </div>
-                </div>
-
-                <div className="relative w-full h-[180px]">
+                {/* Contenedor Calendario / Gráfica (Swipeable) */}
+                <div
+                    onTouchStart={onTouchStart}
+                    onTouchMove={onTouchMove}
+                    onTouchEnd={onTouchEndHandler}
+                    className="relative w-full h-[190px]"
+                >
                     {/* Slide 0: Calendario */}
-                    <div className={`absolute inset-0 transition-all duration-300 ease-in-out ${statsSlide === 0 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-full pointer-events-none'}`}>
-                        <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-400 mb-2">
+                    <div className={`absolute inset-0 transition-opacity duration-300 flex flex-col ${statsSlide === 0 ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none'}`}>
+                        <div className="flex justify-between items-center mb-2">
+                            <button type="button" onClick={handlePrevMonth} className="p-1.5 rounded-full hover:bg-white/10 transition-colors"><ChevronLeft className="w-5 h-5 text-white/80" /></button>
+                            <span className="text-sm font-bold capitalize text-white">{viewDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</span>
+                            <button type="button" onClick={handleNextMonth} className="p-1.5 rounded-full hover:bg-white/10 transition-colors"><ChevronRight className="w-5 h-5 text-white/80" /></button>
+                        </div>
+                        <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-white/50 mb-1">
                             <div>L</div><div>M</div><div>X</div><div>J</div><div>V</div><div>S</div><div>D</div>
                         </div>
                         <div className="grid grid-cols-7 gap-1 text-center">
@@ -128,11 +127,11 @@ export default function HomeView({ currentUser, globalLeaderboard, activities, u
                             {Array.from({ length: daysInMonth }).map((_, i) => {
                                 const day = i + 1;
                                 const hasAct = daysWithActivity.has(day);
-                                const isToday = day === now.getDate() && now.getMonth() === currentMonth;
+                                const isToday = day === actualNow.getDate() && viewMonth === actualCurrentMonth && viewYear === actualCurrentYear;
                                 return (
-                                    <div key={day} className={`w-full aspect-square flex items-center justify-center rounded-lg text-[10px] sm:text-xs font-bold ${hasAct ? 'bg-emerald-500 text-white shadow-sm'
-                                        : isToday ? 'border-2 border-indigo-200 text-indigo-600'
-                                            : 'bg-slate-50 text-slate-600'
+                                    <div key={day} className={`w-full flex items-center justify-center rounded-lg text-xs font-bold aspect-square ${hasAct ? 'bg-white shadow-sm text-indigo-700'
+                                        : isToday ? 'border border-white/40 text-white'
+                                            : 'text-white/80'
                                         }`}>
                                         {day}
                                     </div>
@@ -141,20 +140,35 @@ export default function HomeView({ currentUser, globalLeaderboard, activities, u
                         </div>
                     </div>
 
-                    {/* Slide 1: Gráfica de Líneas */}
-                    <div className={`absolute inset-0 transition-all duration-300 ease-in-out pt-6 px-4 pb-6 ${statsSlide === 1 ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full pointer-events-none'}`}>
+                    {/* Slide 1: Gráfico */}
+                    <div className={`absolute inset-0 transition-opacity duration-300 flex flex-col ${statsSlide === 1 ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none'}`}>
+                        <div className="flex justify-between items-center mb-2">
+                            <button type="button" onClick={() => setStatsSlide(0)} className="p-1.5 rounded-full hover:bg-white/10 transition-colors"><ChevronLeft className="w-5 h-5 text-white/80" /></button>
+                            <span className="text-sm font-bold text-white">Entrenamientos Mensuales</span>
+                            <div className="w-8"></div>
+                        </div>
                         {sortedMonths.length === 0 ? (
-                            <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
-                                <Activity className="w-6 h-6 mb-2 opacity-50 text-indigo-300" />
+                            <div className="w-full flex-1 flex flex-col items-center justify-center text-white/50">
+                                <Activity className="w-6 h-6 mb-2 opacity-50" />
                                 <span className="text-xs font-medium">Aún no hay datos</span>
                             </div>
                         ) : (
-                            <div className="w-full h-[90px] relative mt-1">
-                                {/* SVG para la línea */}
-                                <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 overflow-visible z-0">
+                            <div className="w-full flex-1 relative">
+                                <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute top-4 bottom-5 inset-x-0 overflow-visible z-0">
+                                    {/* Area */}
+                                    <polygon
+                                        fill="rgba(233, 213, 255, 0.25)"
+                                        points={`${sortedMonths.length > 1 ? 0 : 50},100 ${sortedMonths.map((m, i) => {
+                                            const count = monthlyWorkouts[m];
+                                            const x = sortedMonths.length > 1 ? (i / (sortedMonths.length - 1)) * 100 : 50;
+                                            const y = 100 - ((count / maxWorkouts) * 100);
+                                            return `${x},${y}`;
+                                        }).join(' ')} ${sortedMonths.length > 1 ? 100 : 50},100`}
+                                    />
+                                    {/* Line */}
                                     <polyline
                                         fill="none"
-                                        stroke="#818cf8"
+                                        stroke="rgba(255,255,255,0.9)"
                                         strokeWidth="2.5"
                                         vectorEffect="non-scaling-stroke"
                                         points={sortedMonths.map((m, i) => {
@@ -166,8 +180,7 @@ export default function HomeView({ currentUser, globalLeaderboard, activities, u
                                     />
                                 </svg>
 
-                                {/* Puntos y etiquetas */}
-                                <div className="absolute inset-0 flex justify-between z-10 w-full h-full">
+                                <div className="absolute top-4 bottom-5 inset-x-0 flex justify-between z-10 w-full">
                                     {sortedMonths.map((monthKey, i) => {
                                         const count = monthlyWorkouts[monthKey];
                                         const heightPercent = (count / maxWorkouts) * 100;
@@ -176,22 +189,17 @@ export default function HomeView({ currentUser, globalLeaderboard, activities, u
 
                                         return (
                                             <div key={monthKey} className="relative flex flex-col items-center h-full w-0">
-                                                {/* Punto */}
                                                 <div
-                                                    className="absolute w-3.5 h-3.5 bg-indigo-600 border-2 border-white rounded-full shadow-sm transform -translate-x-1/2 translate-y-1/2"
+                                                    className="absolute w-2 h-2 bg-white rounded-full shadow-sm transform -translate-x-1/2 translate-y-1/2"
                                                     style={{ bottom: `${heightPercent}%` }}
                                                 />
-
-                                                {/* Valor numérico */}
                                                 <div
-                                                    className="absolute text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded shadow-sm transform -translate-x-1/2 whitespace-nowrap"
-                                                    style={{ bottom: `calc(${heightPercent}% + 12px)` }}
+                                                    className="absolute text-[10px] font-bold text-white transform -translate-x-1/2 whitespace-nowrap"
+                                                    style={{ bottom: `calc(${heightPercent}% + 10px)` }}
                                                 >
                                                     {count}
                                                 </div>
-
-                                                {/* Etiqueta del mes */}
-                                                <span className="absolute -bottom-6 text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase transform -translate-x-1/2 whitespace-nowrap">
+                                                <span className="absolute -bottom-5 text-[9px] sm:text-[10px] font-bold text-white/50 uppercase transform -translate-x-1/2 whitespace-nowrap">
                                                     {monthName}
                                                 </span>
                                             </div>
@@ -201,6 +209,12 @@ export default function HomeView({ currentUser, globalLeaderboard, activities, u
                             </div>
                         )}
                     </div>
+                </div>
+
+                {/* Pagination Dots */}
+                <div className="flex justify-center gap-1.5 mt-2">
+                    <button onClick={() => setStatsSlide(0)} className={`rounded-full transition-all ${statsSlide === 0 ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/30'}`} />
+                    <button onClick={() => setStatsSlide(1)} className={`rounded-full transition-all ${statsSlide === 1 ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/30'}`} />
                 </div>
             </div>
 
