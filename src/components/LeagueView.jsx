@@ -24,7 +24,7 @@
  *  - onOpenDescription {Function} - Abre el modal de reglas completas.
  */
 import React from 'react';
-import { Trophy, Users, Award, Clock, ChevronRight, PlusCircle, Settings } from 'lucide-react';
+import { Trophy, Users, Award, Clock, ChevronRight, PlusCircle, Settings, Share2 } from 'lucide-react';
 
 export default function LeagueView({
     currentUser, users, leagues, activeLeagueId, setActiveLeagueId,
@@ -55,6 +55,30 @@ export default function LeagueView({
     const leagueLeaderboard = users
         .filter(u => u.leaguePoints[activeLeagueId] !== undefined)
         .sort((a, b) => b.leaguePoints[activeLeagueId] - a.leaguePoints[activeLeagueId]);
+
+    // Función para compartir liga
+    const handleShareLeague = async () => {
+        const shareText = `¡Únete a mi liga "${activeLeague.name}" en GymRat! Usa el código: ${activeLeague.code}`;
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'Liga en GymRat',
+                    text: shareText,
+                });
+            } catch (err) {
+                // El usuario posiblemente canceló, o hubo otro error no crítico
+                console.error('Error compartiendo:', err);
+            }
+        } else {
+            // Fallback: copiar al portapapeles
+            try {
+                await navigator.clipboard.writeText(shareText);
+                alert('¡Código y mensaje copiados al portapapeles! Listo para pegar en WhatsApp u otra app.');
+            } catch (err) {
+                alert('No se pudo copiar el código automáticamente. Tu código es: ' + activeLeague.code);
+            }
+        }
+    };
 
     return (
         <div className="space-y-6 pb-20 animate-in fade-in duration-200">
@@ -100,11 +124,18 @@ export default function LeagueView({
 
                 <div className="flex justify-between items-center mt-3 mb-1">
                     <h1 className="text-2xl font-black">{activeLeague.name}</h1>
-                    {activeLeague.id !== 'global' && (
-                        <button onClick={onOpenEditLeague} className="text-white/50 hover:text-white transition-colors bg-white/10 p-2 rounded-full">
-                            <Settings className="w-4 h-4" />
-                        </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                        {activeLeague.id !== 'global' && (
+                            <button onClick={handleShareLeague} className="text-white/50 hover:text-white transition-colors bg-white/10 p-2 rounded-full" title="Compartir Liga">
+                                <Share2 className="w-4 h-4" />
+                            </button>
+                        )}
+                        {activeLeague.id !== 'global' && (
+                            <button onClick={onOpenEditLeague} className="text-white/50 hover:text-white transition-colors bg-white/10 p-2 rounded-full" title="Ajustes">
+                                <Settings className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 <p className="text-slate-400 text-sm flex items-center gap-2">
