@@ -94,8 +94,7 @@ export default function App() {
 
   /** Abre el modal de perfil precargando los datos actuales. */
   const openProfileView = () => {
-    data.openProfileEdit();
-    setShowProfileModal(true);
+    setSelectedUserProfile(data.currentUser);
   };
 
   /** Guarda perfil y cierra el modal. */
@@ -228,6 +227,8 @@ export default function App() {
               onEditActivity={handleEditActivity}
               onDeleteActivity={data.handleDeleteActivity}
               onOpenUserProfile={setSelectedUserProfile}
+              leagues={data.leagues}
+              activeLeagueId={data.activeLeagueId}
             />
           )}
           {activeTab === 'league' && (
@@ -326,9 +327,14 @@ export default function App() {
         {selectedUserProfile && (
           <PublicProfileModal
             user={selectedUserProfile}
+            currentUser={data.currentUser}
             activities={data.activities}
             sports={SPORTS}
             onClose={() => setSelectedUserProfile(null)}
+            onEditProfile={() => {
+              data.openProfileEdit();
+              setShowProfileModal(true);
+            }}
           />
         )}
 

@@ -21,25 +21,7 @@
 import React, { useState } from 'react';
 import { Activity, Clock, Target, Zap, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 
-export default function HomeView({ currentUser, globalLeaderboard, activities, userActivities = [], users, userId, sports, onEditActivity, onDeleteActivity, onOpenUserProfile }) {
-    const [statsSlide, setStatsSlide] = useState(0); // 0 = calendar, 1 = chart
-    const [viewDate, setViewDate] = useState(new Date());
-
-    const [touchStart, setTouchStart] = useState(null);
-    const [touchEnd, setTouchEnd] = useState(null);
-
-    const onTouchStart = (e) => {
-        setTouchEnd(null);
-        setTouchStart(e.targetTouches[0].clientX);
-    };
-    const onTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
-    const onTouchEndHandler = () => {
-        if (!touchStart || !touchEnd) return;
-        const distance = touchStart - touchEnd;
-        if (distance > 50) setStatsSlide(1);
-        if (distance < -50) setStatsSlide(0);
-    };
-
+export default function HomeView({ currentUser, globalLeaderboard, activities, userActivities = [], users, userId, sports, leagues = [], activeLeagueId, onEditActivity, onDeleteActivity, onOpenUserProfile }) {
     const actualNow = new Date();
     const actualCurrentMonth = actualNow.getMonth();
     const actualCurrentYear = actualNow.getFullYear();
@@ -52,169 +34,71 @@ export default function HomeView({ currentUser, globalLeaderboard, activities, u
         return acc;
     }, 0);
 
-    const viewMonth = viewDate.getMonth();
-    const viewYear = viewDate.getFullYear();
+    // Calcular distancia al lider
+    let leaderPoints = 0;
+    let distanceToLeader = 0;
+    let isLeader = false;
+    let leagueName = "Global";
 
-    const daysWithActivity = new Set(
-        userActivities
-            .filter(act => {
-                const d = new Date(act.createdAt);
-                return d.getMonth() === viewMonth && d.getFullYear() === viewYear;
-            })
-            .map(act => new Date(act.createdAt).getDate())
-    );
+    const myLeagues = leagues.filter(l => currentUser.leaguePoints[l.id] !== undefined);
+    const activeLeague = myLeagues.find(l => l.id === activeLeagueId) || myLeagues[0];
 
-    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-    let firstDayOfMonth = new Date(viewYear, viewMonth, 1).getDay();
-    firstDayOfMonth = firstDayOfMonth === 0 ? 7 : firstDayOfMonth;
-
-    const monthlyWorkouts = {};
-    userActivities.forEach(act => {
-        const d = new Date(act.createdAt);
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        monthlyWorkouts[key] = (monthlyWorkouts[key] || 0) + 1;
-    });
-
-    const sortedMonths = Object.keys(monthlyWorkouts).sort().slice(-6);
-    const maxWorkouts = Math.max(...sortedMonths.map(m => monthlyWorkouts[m]), 1);
-
-    const handlePrevMonth = () => setViewDate(new Date(viewYear, viewMonth - 1, 1));
-    const handleNextMonth = () => setViewDate(new Date(viewYear, viewMonth + 1, 1));
+    if (activeLeague) {
+        const leagueUsers = users.filter(u => u.leaguePoints[activeLeague.id] !== undefined);
+        const topUser = leagueUsers.sort((a, b) => b.leaguePoints[activeLeague.id] - a.leaguePoints[activeLeague.id])[0];
+        leaderPoints = topUser ? topUser.leaguePoints[activeLeague.id] : 0;
+        const myPoints = currentUser.leaguePoints[activeLeague.id] || 0;
+        distanceToLeader = Math.floor(leaderPoints - myPoints);
+        isLeader = distanceToLeader <= 0;
+        leagueName = activeLeague.name;
+    } else {
+        const topUser = globalLeaderboard[0];
+        leaderPoints = topUser ? topUser.totalPoints : 0;
+        const myPoints = currentUser.totalPoints || 0;
+        distanceToLeader = Math.floor(leaderPoints - myPoints);
+        isLeader = distanceToLeader <= 0;
+    }
 
     return (
         <div className="space-y-6 pb-20 animate-in fade-in zoom-in-95 duration-200">
 
-            {/* ── Tarjeta Principal (Compacta + Stats Swipeables) ── */}
-            <div className="bg-gradient-to-br from-indigo-700 to-purple-800 rounded-3xl pt-5 px-5 pb-4 text-white shadow-lg overflow-hidden relative">
-
-                {/* Cabecera Puntos (Compacta) */}
-                <div className="flex justify-between items-start mb-5">
+            {/* ── Tarjeta Principal (Compacta) ── */}
+            <div className="bg-gradient-to-br from-indigo-700 to-purple-800 rounded-3xl p-5 text-white shadow-lg relative overflow-hidden">
+                {/* Cabecera Puntos */}
+                <div className="flex justify-between items-start mb-4">
                     <div>
                         <p className="text-white/70 text-[10px] font-bold uppercase mb-0.5 tracking-wider">Puntuación Total</p>
-                        <div className="text-2xl font-black tracking-tight flex items-baseline gap-1">
-                            {Math.floor(currentUser.totalPoints)} <span className="text-xs font-medium text-white/50">pts</span>
+                        <div className="text-3xl font-black tracking-tight flex items-baseline gap-1">
+                            {Math.floor(currentUser.totalPoints)} <span className="text-sm font-medium text-white/50">pts</span>
                         </div>
                     </div>
                     <div className="text-right">
                         <p className="text-white/70 text-[10px] font-bold uppercase mb-0.5 tracking-wider">Mes actual</p>
-                        <div className="text-xl font-bold tracking-tight text-emerald-300 flex items-baseline gap-1 justify-end">
-                            +{Math.floor(currentMonthPoints)} <span className="text-[10px] font-medium text-emerald-300/70">pts</span>
+                        <div className="text-2xl font-bold tracking-tight text-emerald-300 flex items-baseline gap-1 justify-end">
+                            +{Math.floor(currentMonthPoints)} <span className="text-xs font-medium text-emerald-300/70">pts</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Contenedor Calendario / Gráfica (Swipeable) */}
-                <div
-                    onTouchStart={onTouchStart}
-                    onTouchMove={onTouchMove}
-                    onTouchEnd={onTouchEndHandler}
-                    className="relative w-full h-[255px]"
-                >
-                    {/* Slide 0: Calendario */}
-                    <div className={`absolute inset-0 transition-opacity duration-300 flex flex-col ${statsSlide === 0 ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none'}`}>
-                        <div className="flex justify-between items-center mb-2">
-                            <button type="button" onClick={handlePrevMonth} className="p-1.5 rounded-full hover:bg-white/10 transition-colors"><ChevronLeft className="w-5 h-5 text-white/80" /></button>
-                            <span className="text-sm font-bold capitalize text-white">{viewDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</span>
-                            <button type="button" onClick={handleNextMonth} className="p-1.5 rounded-full hover:bg-white/10 transition-colors"><ChevronRight className="w-5 h-5 text-white/80" /></button>
-                        </div>
-                        <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-white/50 mb-1">
-                            <div>L</div><div>M</div><div>X</div><div>J</div><div>V</div><div>S</div><div>D</div>
-                        </div>
-                        <div className="grid grid-cols-7 gap-1 text-center">
-                            {Array.from({ length: firstDayOfMonth - 1 }).map((_, i) => (
-                                <div key={`empty-${i}`} className="w-full aspect-square"></div>
-                            ))}
-                            {Array.from({ length: daysInMonth }).map((_, i) => {
-                                const day = i + 1;
-                                const hasAct = daysWithActivity.has(day);
-                                const isToday = day === actualNow.getDate() && viewMonth === actualCurrentMonth && viewYear === actualCurrentYear;
-                                return (
-                                    <div key={day} className={`w-full flex items-center justify-center rounded-lg text-xs font-bold aspect-square ${hasAct ? 'bg-white shadow-sm text-indigo-700'
-                                        : isToday ? 'border border-white/40 text-white'
-                                            : 'text-white/80'
-                                        }`}>
-                                        {day}
-                                    </div>
-                                );
-                            })}
+                {/* Distancia al Líder */}
+                <div className="bg-white/10 rounded-2xl p-3 flex items-center justify-between backdrop-blur-sm border border-white/10">
+                    <div className="flex items-center gap-2">
+                        <Target className="w-5 h-5 text-indigo-300" />
+                        <div>
+                            <p className="text-[10px] font-bold text-white/70 uppercase">Distancia al líder</p>
+                            <p className="text-xs font-medium text-white/90 truncate max-w-[120px]">Liga: {leagueName}</p>
                         </div>
                     </div>
-
-                    {/* Slide 1: Gráfico */}
-                    <div className={`absolute inset-0 transition-opacity duration-300 flex flex-col ${statsSlide === 1 ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none'}`}>
-                        <div className="flex justify-between items-center mb-2">
-                            <button type="button" onClick={() => setStatsSlide(0)} className="p-1.5 rounded-full hover:bg-white/10 transition-colors"><ChevronLeft className="w-5 h-5 text-white/80" /></button>
-                            <span className="text-sm font-bold text-white">Entrenamientos Mensuales</span>
-                            <div className="w-8"></div>
-                        </div>
-                        {sortedMonths.length === 0 ? (
-                            <div className="w-full flex-1 flex flex-col items-center justify-center text-white/50">
-                                <Activity className="w-6 h-6 mb-2 opacity-50" />
-                                <span className="text-xs font-medium">Aún no hay datos</span>
-                            </div>
+                    <div className="text-right">
+                        {isLeader ? (
+                            <span className="text-sm font-bold text-yellow-400">¡Eres el líder! 🏆</span>
                         ) : (
-                            <div className="w-full flex-1 relative">
-                                <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute top-4 bottom-5 inset-x-0 overflow-visible z-0">
-                                    {/* Area */}
-                                    <polygon
-                                        fill="rgba(233, 213, 255, 0.25)"
-                                        points={`${sortedMonths.length > 1 ? 0 : 50},100 ${sortedMonths.map((m, i) => {
-                                            const count = monthlyWorkouts[m];
-                                            const x = sortedMonths.length > 1 ? (i / (sortedMonths.length - 1)) * 100 : 50;
-                                            const y = 100 - ((count / maxWorkouts) * 100);
-                                            return `${x},${y}`;
-                                        }).join(' ')} ${sortedMonths.length > 1 ? 100 : 50},100`}
-                                    />
-                                    {/* Line */}
-                                    <polyline
-                                        fill="none"
-                                        stroke="rgba(255,255,255,0.9)"
-                                        strokeWidth="2.5"
-                                        vectorEffect="non-scaling-stroke"
-                                        points={sortedMonths.map((m, i) => {
-                                            const count = monthlyWorkouts[m];
-                                            const x = sortedMonths.length > 1 ? (i / (sortedMonths.length - 1)) * 100 : 50;
-                                            const y = 100 - ((count / maxWorkouts) * 100);
-                                            return `${x},${y}`;
-                                        }).join(' ')}
-                                    />
-                                </svg>
-
-                                <div className="absolute top-4 bottom-5 inset-x-0 flex justify-between z-10 w-full">
-                                    {sortedMonths.map((monthKey, i) => {
-                                        const count = monthlyWorkouts[monthKey];
-                                        const heightPercent = (count / maxWorkouts) * 100;
-                                        const dateObj = new Date(monthKey + '-02');
-                                        const monthName = dateObj.toLocaleDateString('es-ES', { month: 'short' }).substring(0, 3);
-
-                                        return (
-                                            <div key={monthKey} className="relative flex flex-col items-center h-full w-0">
-                                                <div
-                                                    className="absolute w-2 h-2 bg-white rounded-full shadow-sm transform -translate-x-1/2 translate-y-1/2"
-                                                    style={{ bottom: `${heightPercent}%` }}
-                                                />
-                                                <div
-                                                    className="absolute text-[10px] font-bold text-white transform -translate-x-1/2 whitespace-nowrap"
-                                                    style={{ bottom: `calc(${heightPercent}% + 10px)` }}
-                                                >
-                                                    {count}
-                                                </div>
-                                                <span className="absolute -bottom-5 text-[9px] sm:text-[10px] font-bold text-white/50 uppercase transform -translate-x-1/2 whitespace-nowrap">
-                                                    {monthName}
-                                                </span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-lg font-bold text-red-300">-{Math.floor(distanceToLeader)}</span>
+                                <span className="text-xs font-medium text-red-300/70">pts</span>
                             </div>
                         )}
                     </div>
-                </div>
-
-                {/* Pagination Dots */}
-                <div className="flex justify-center gap-1.5 mt-2">
-                    <button onClick={() => setStatsSlide(0)} className={`rounded-full transition-all ${statsSlide === 0 ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/30'}`} />
-                    <button onClick={() => setStatsSlide(1)} className={`rounded-full transition-all ${statsSlide === 1 ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/30'}`} />
                 </div>
             </div>
 
