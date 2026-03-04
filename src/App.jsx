@@ -219,6 +219,7 @@ export default function App() {
               currentUser={data.currentUser}
               globalLeaderboard={data.globalLeaderboard}
               activities={data.activities}
+              userActivities={data.userActivities}
               users={data.users}
               userId={user.id}
               sports={SPORTS}

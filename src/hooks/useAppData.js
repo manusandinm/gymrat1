@@ -22,6 +22,7 @@ export function useAppData(user) {
     const [isLoadingData, setIsLoadingData] = useState(false);
     const [users, setUsers] = useState([]);
     const [activities, setActivities] = useState([]);
+    const [userActivities, setUserActivities] = useState([]);
     const [leagues, setLeagues] = useState([]);
     const [activeLeagueId, setActiveLeagueId] = useState('');
     const [savedRoutines, setSavedRoutines] = useState([]);
@@ -168,6 +169,29 @@ export function useAppData(user) {
                 };
             });
             setActivities(formattedActs);
+
+            // 3.5. Todas las actividades del usuario actual para estadísticas
+            const { data: userActsData } = await supabase
+                .from('activities')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false });
+
+            const formattedUserActs = (userActsData || []).map(a => {
+                const d = new Date(a.created_at);
+                return {
+                    id: a.id,
+                    userId: a.user_id,
+                    sportId: a.sport_id,
+                    duration: a.duration,
+                    points: a.points,
+                    date: d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    createdAt: a.created_at,
+                    details: a.details,
+                    photo: a.photo_url
+                };
+            });
+            setUserActivities(formattedUserActs);
 
             // 4. Rutinas guardadas del usuario actual
             const { data: routinesData } = await supabase.from('routines').select('*').eq('user_id', user.id);
@@ -410,7 +434,7 @@ export function useAppData(user) {
     // ─── Retorno del hook ─────────────────────────────────────────────────────
     return {
         // Datos
-        isLoadingData, users, activities, leagues, savedRoutines,
+        isLoadingData, users, activities, userActivities, leagues, savedRoutines,
         currentUser, globalLeaderboard,
 
         // Liga activa
