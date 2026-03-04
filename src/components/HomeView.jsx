@@ -21,7 +21,7 @@
 import React, { useState } from 'react';
 import { Activity, Clock, Target, Zap, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 
-export default function HomeView({ currentUser, globalLeaderboard, activities, userActivities = [], users, userId, sports, onEditActivity, onDeleteActivity }) {
+export default function HomeView({ currentUser, globalLeaderboard, activities, userActivities = [], users, userId, sports, onEditActivity, onDeleteActivity, onOpenUserProfile }) {
     const [statsSlide, setStatsSlide] = useState(0); // 0 = calendar, 1 = chart
     const [viewDate, setViewDate] = useState(new Date());
 
@@ -82,7 +82,7 @@ export default function HomeView({ currentUser, globalLeaderboard, activities, u
     const handleNextMonth = () => setViewDate(new Date(viewYear, viewMonth + 1, 1));
 
     return (
-        <div className="space-y-6 pb-20 animate-in fade-in zoom-in-95 duration-200 pt-8">
+        <div className="space-y-6 pb-20 animate-in fade-in zoom-in-95 duration-200">
 
             {/* ── Tarjeta Principal (Compacta + Stats Swipeables) ── */}
             <div className="bg-gradient-to-br from-indigo-700 to-purple-800 rounded-3xl pt-5 px-5 pb-4 text-white shadow-lg overflow-hidden relative">
@@ -241,7 +241,12 @@ export default function HomeView({ currentUser, globalLeaderboard, activities, u
                                                 {sport.icon}
                                             </div>
                                             <div>
-                                                <p className="font-bold text-slate-800 text-sm">{u.name} <span className="font-normal text-slate-500">hizo {sport.name}</span></p>
+                                                <p className="font-bold text-slate-800 text-sm">
+                                                    <button onClick={() => u.id && onOpenUserProfile && onOpenUserProfile(u)} className="hover:underline hover:text-indigo-600 transition-colors text-left">
+                                                        {u.name}
+                                                    </button>
+                                                    <span className="font-normal text-slate-500"> hizo {sport.name}</span>
+                                                </p>
                                                 <p className="text-xs text-slate-500 font-medium mt-0.5">{act.details}</p>
                                                 <p className="text-xs text-slate-400 flex items-center gap-1 mt-1">
                                                     <Clock className="w-3 h-3" /> {act.duration} min • {act.date}

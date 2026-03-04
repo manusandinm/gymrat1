@@ -28,7 +28,8 @@ import { Trophy, Users, Award, Clock, ChevronRight, PlusCircle, Settings } from 
 
 export default function LeagueView({
     currentUser, users, leagues, activeLeagueId, setActiveLeagueId,
-    userId, onOpenCreateModal, onOpenEditLeague, onOpenDescription
+    userId, onOpenCreateModal, onOpenEditLeague, onOpenDescription,
+    onOpenUserProfile
 }) {
     // Ligas en las que participa el usuario actual
     const myLeagues = leagues.filter(l => currentUser.leaguePoints[l.id] !== undefined);
@@ -163,7 +164,8 @@ export default function LeagueView({
                     {leagueLeaderboard.map((u, index) => (
                         <div
                             key={u.id}
-                            className={`flex items-center p-4 ${index !== leagueLeaderboard.length - 1 ? 'border-b border-slate-50' : ''} ${u.id === userId ? 'bg-indigo-50/50' : ''}`}
+                            onClick={() => onOpenUserProfile && onOpenUserProfile(u)}
+                            className={`flex items-center p-4 cursor-pointer hover:bg-slate-50 transition-colors ${index !== leagueLeaderboard.length - 1 ? 'border-b border-slate-50' : ''} ${u.id === userId ? 'bg-indigo-50/50 hover:bg-indigo-50/80' : ''}`}
                         >
                             {/* Medalla o número */}
                             <div className="w-8 font-black text-slate-300 text-lg">

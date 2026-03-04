@@ -58,6 +58,7 @@ import {
   EditLeagueModal,
   CreateOrJoinLeagueModal,
 } from './components/LeagueModals';
+import PublicProfileModal from './components/PublicProfileModal';
 
 export default function App() {
   const { user, loading: authLoading, logout } = useAuth();
@@ -71,6 +72,7 @@ export default function App() {
   const [showEditLeagueModal, setShowEditLeagueModal] = useState(false);
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
   const [leagueModalTab, setLeagueModalTab] = useState('join');
+  const [selectedUserProfile, setSelectedUserProfile] = useState(null);
 
   // Actividad actualmente en edición
   const [editingActivity, setEditingActivity] = useState(null);
@@ -225,6 +227,7 @@ export default function App() {
               sports={SPORTS}
               onEditActivity={handleEditActivity}
               onDeleteActivity={data.handleDeleteActivity}
+              onOpenUserProfile={setSelectedUserProfile}
             />
           )}
           {activeTab === 'league' && (
@@ -238,6 +241,7 @@ export default function App() {
               onOpenCreateModal={openCreateLeagueModal}
               onOpenEditLeague={openEditLeague}
               onOpenDescription={() => setShowDescriptionModal(true)}
+              onOpenUserProfile={setSelectedUserProfile}
             />
           )}
         </main>
@@ -315,6 +319,16 @@ export default function App() {
             onSave={handleSaveProfile}
             onClose={() => setShowProfileModal(false)}
             onLogout={logout}
+          />
+        )}
+
+        {/* ── Modal: perfil publico ── */}
+        {selectedUserProfile && (
+          <PublicProfileModal
+            user={selectedUserProfile}
+            activities={data.activities}
+            sports={SPORTS}
+            onClose={() => setSelectedUserProfile(null)}
           />
         )}
 
