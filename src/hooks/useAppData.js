@@ -147,6 +147,33 @@ export function useAppData(user) {
                 setActiveLeagueId('');
             }
 
+            // 2.5: Auto-unirse a liga si hay un link de invitación (?join=CODIGO)
+            const searchParams = new URLSearchParams(window.location.search);
+            const joinCodeParam = searchParams.get('join');
+            if (joinCodeParam && currentUserData) {
+                // Limpiamos la URL visualmente para que no se re-ejecute y quede bonita
+                window.history.replaceState({}, document.title, window.location.pathname);
+
+                const leagueToJoin = formattedLeagues.find(l => l.code.toUpperCase() === joinCodeParam.toUpperCase().trim());
+                if (leagueToJoin) {
+                    // Si el usuario no pertenece a la liga, lo insertamos
+                    if (currentUserData.leaguePoints[leagueToJoin.id] === undefined) {
+                        const { error: joinError } = await supabase.from('league_members').insert({
+                            league_id: leagueToJoin.id,
+                            user_id: user.id,
+                            points: 0
+                        });
+                        if (!joinError) {
+                            // Al unirse exitosamente, recargamos los datos desde cero para que todo cuadre
+                            return loadData();
+                        }
+                    } else {
+                        // Si ya pertenece a la liga, simplemente la seleccionamos para que la vea
+                        setActiveLeagueId(leagueToJoin.id);
+                    }
+                }
+            }
+
             // 3. Actividades recientes (últimas 20 de todos los usuarios)
             const { data: actsData } = await supabase
                 .from('activities')

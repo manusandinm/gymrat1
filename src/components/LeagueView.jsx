@@ -58,7 +58,9 @@ export default function LeagueView({
 
     // Función para compartir liga
     const handleShareLeague = async () => {
-        const shareText = `¡Únete a mi liga "${activeLeague.name}" en GymRat! Usa el código: ${activeLeague.code}`;
+        // Generar enlace dinámico con el parámetro ?join=codigo_de_liga
+        const joinUrl = `${window.location.origin}${window.location.pathname}?join=${activeLeague.code}`;
+        const shareText = `¡Únete a mi liga "${activeLeague.name}" en GymRat!\n\nToca el enlace para unirte directamente:\n${joinUrl}`;
         if (navigator.share) {
             try {
                 await navigator.share({
