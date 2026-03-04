@@ -108,7 +108,7 @@ export default function HomeView({ currentUser, globalLeaderboard, activities, u
                     onTouchStart={onTouchStart}
                     onTouchMove={onTouchMove}
                     onTouchEnd={onTouchEndHandler}
-                    className="relative w-full h-[190px]"
+                    className="relative w-full h-[255px]"
                 >
                     {/* Slide 0: Calendario */}
                     <div className={`absolute inset-0 transition-opacity duration-300 flex flex-col ${statsSlide === 0 ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none'}`}>
