@@ -332,6 +332,7 @@ export default function App() {
             sports={SPORTS}
             onClose={() => setSelectedUserProfile(null)}
             onEditProfile={() => {
+              setSelectedUserProfile(null);
               data.openProfileEdit();
               setShowProfileModal(true);
             }}

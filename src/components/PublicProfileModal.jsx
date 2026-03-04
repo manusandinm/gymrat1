@@ -104,26 +104,26 @@ export default function PublicProfileModal({ user, currentUser, activities, spor
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto pb-20 space-y-4">
+            <div className="flex-1 overflow-y-auto space-y-4">
                 {/* ── Gráficos Swipeables ── */}
-                <div className="bg-gradient-to-br from-indigo-700 to-purple-800 rounded-3xl pt-5 px-5 pb-4 text-white shadow-lg overflow-hidden relative mx-6 mt-6">
+                <div className="bg-gradient-to-br from-indigo-700 to-purple-800 rounded-3xl p-6 text-white shadow-lg relative mx-6 mt-2 mb-2">
                     <div
                         onTouchStart={onTouchStart}
                         onTouchMove={onTouchMove}
                         onTouchEnd={onTouchEndHandler}
-                        className="relative w-full h-[255px]"
+                        className="relative w-full h-[270px]"
                     >
                         {/* Slide 0: Calendario */}
                         <div className={`absolute inset-0 transition-opacity duration-300 flex flex-col ${statsSlide === 0 ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none'}`}>
-                            <div className="flex justify-between items-center mb-2">
+                            <div className="flex justify-between items-center mb-6">
                                 <button type="button" onClick={handlePrevMonth} className="p-1.5 rounded-full hover:bg-white/10 transition-colors"><ChevronLeft className="w-5 h-5 text-white/80" /></button>
-                                <span className="text-sm font-bold capitalize text-white">{viewDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</span>
+                                <span className="text-sm font-bold capitalize text-white uppercase tracking-wider">{viewDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</span>
                                 <button type="button" onClick={handleNextMonth} className="p-1.5 rounded-full hover:bg-white/10 transition-colors"><ChevronRight className="w-5 h-5 text-white/80" /></button>
                             </div>
-                            <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-white/50 mb-1">
+                            <div className="grid grid-cols-7 gap-1.5 text-center text-[10px] font-bold text-white/50 mb-2">
                                 <div>L</div><div>M</div><div>X</div><div>J</div><div>V</div><div>S</div><div>D</div>
                             </div>
-                            <div className="grid grid-cols-7 gap-1 text-center">
+                            <div className="grid grid-cols-7 gap-1.5 text-center flex-1 pb-2">
                                 {Array.from({ length: firstDayOfMonth - 1 }).map((_, i) => (
                                     <div key={`empty-${i}`} className="w-full aspect-square"></div>
                                 ))}
@@ -132,9 +132,9 @@ export default function PublicProfileModal({ user, currentUser, activities, spor
                                     const hasAct = daysWithActivity.has(day);
                                     const isToday = day === actualNow.getDate() && viewMonth === actualCurrentMonth && viewYear === actualCurrentYear;
                                     return (
-                                        <div key={day} className={`w-full flex items-center justify-center rounded-lg text-xs font-bold aspect-square ${hasAct ? 'bg-white shadow-sm text-indigo-700'
+                                        <div key={day} className={`w-full flex items-center justify-center rounded-xl text-xs font-bold aspect-square shadow-sm ${hasAct ? 'bg-white text-indigo-700'
                                             : isToday ? 'border border-white/40 text-white'
-                                                : 'text-white/80'
+                                                : 'text-white/80 bg-white/5'
                                             }`}>
                                             {day}
                                         </div>
@@ -145,9 +145,9 @@ export default function PublicProfileModal({ user, currentUser, activities, spor
 
                         {/* Slide 1: Gráfico */}
                         <div className={`absolute inset-0 transition-opacity duration-300 flex flex-col ${statsSlide === 1 ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none'}`}>
-                            <div className="flex justify-between items-center mb-2">
+                            <div className="flex justify-between items-center mb-6">
                                 <button type="button" onClick={() => setStatsSlide(0)} className="p-1.5 rounded-full hover:bg-white/10 transition-colors"><ChevronLeft className="w-5 h-5 text-white/80" /></button>
-                                <span className="text-sm font-bold text-white">Entrenamientos Mensuales</span>
+                                <span className="text-sm font-bold text-white uppercase tracking-wider">Histórico de Meses</span>
                                 <div className="w-8"></div>
                             </div>
                             {sortedMonths.length === 0 ? (
@@ -208,8 +208,8 @@ export default function PublicProfileModal({ user, currentUser, activities, spor
                 </div>
 
                 {/* ── Feed de Actividades del Usuario ── */}
-                <div className="px-6 space-y-4">
-                    <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-2 mt-4">
+                <div className="px-6 space-y-4 pb-12">
+                    <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4 mt-2">
                         <Medal className="w-5 h-5 text-indigo-500" /> Historial de {user.name}
                     </h3>
 
