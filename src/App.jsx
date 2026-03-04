@@ -229,6 +229,7 @@ export default function App() {
               onOpenUserProfile={setSelectedUserProfile}
               leagues={data.leagues}
               activeLeagueId={data.activeLeagueId}
+              onToggleReaction={data.handleToggleReaction}
             />
           )}
           {activeTab === 'league' && (
@@ -328,9 +329,11 @@ export default function App() {
           <PublicProfileModal
             user={selectedUserProfile}
             currentUser={data.currentUser}
+            users={data.users}
             activities={data.activities}
             sports={SPORTS}
             onClose={() => setSelectedUserProfile(null)}
+            onToggleReaction={data.handleToggleReaction}
             onEditProfile={() => {
               setSelectedUserProfile(null);
               data.openProfileEdit();

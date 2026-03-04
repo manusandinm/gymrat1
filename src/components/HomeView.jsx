@@ -19,9 +19,9 @@
  *  - onDeleteActivity {Function} - Callback al pulsar "Borrar" en una actividad.
  */
 import React, { useState } from 'react';
-import { Activity, Clock, Target, Zap, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Activity, Clock, Target, Zap, Pencil, Trash2, ChevronLeft, ChevronRight, Flame } from 'lucide-react';
 
-export default function HomeView({ currentUser, globalLeaderboard, activities, userActivities = [], users, userId, sports, leagues = [], activeLeagueId, onEditActivity, onDeleteActivity, onOpenUserProfile }) {
+export default function HomeView({ currentUser, globalLeaderboard, activities, userActivities = [], users, userId, sports, leagues = [], activeLeagueId, onEditActivity, onDeleteActivity, onOpenUserProfile, onToggleReaction }) {
     const actualNow = new Date();
     const actualCurrentMonth = actualNow.getMonth();
     const actualCurrentYear = actualNow.getFullYear();
@@ -163,6 +163,30 @@ export default function HomeView({ currentUser, globalLeaderboard, activities, u
                                             <img src={act.photo} alt="Prueba de entrenamiento" className="w-full h-full object-cover object-center" />
                                         </div>
                                     )}
+
+                                    {/* Area de reacciones */}
+                                    <div className="flex gap-2 items-center mt-1 pt-3 border-t border-slate-50">
+                                        <button
+                                            onClick={() => onToggleReaction && onToggleReaction(act.id, '🔥')}
+                                            className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${act.reactions && act.reactions[userId] === '🔥' ? 'bg-orange-100 text-orange-600' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                                        >
+                                            <Flame className={`w-4 h-4 ${act.reactions && act.reactions[userId] === '🔥' ? 'fill-orange-500 text-orange-500' : ''}`} />
+                                            {Object.keys(act.reactions || {}).length > 0 && <span>{Object.keys(act.reactions).length}</span>}
+                                        </button>
+                                        {Object.keys(act.reactions || {}).length > 0 && (
+                                            <div className="flex -space-x-1.5 overflow-hidden">
+                                                {Object.keys(act.reactions).slice(0, 3).map(rUserId => {
+                                                    const rUser = users.find(u => u.id === rUserId);
+                                                    if (!rUser) return null;
+                                                    return (
+                                                        <div key={rUserId} className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-slate-200 flex items-center justify-center text-[10px] overflow-hidden shadow-sm" title={rUser.name}>
+                                                            {rUser.avatar?.startsWith('http') || rUser.avatar?.startsWith('data:') ? <img src={rUser.avatar} className="w-full h-full object-cover" /> : rUser.avatar || '😎'}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             );
                         })}

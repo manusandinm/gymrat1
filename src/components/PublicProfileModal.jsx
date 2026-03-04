@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { X, Clock, Activity, Medal, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Clock, Activity, Medal, Settings, ChevronLeft, ChevronRight, Flame } from 'lucide-react';
 
-export default function PublicProfileModal({ user, currentUser, activities, sports, onClose, onEditProfile }) {
+export default function PublicProfileModal({ user, currentUser, users, activities, sports, onClose, onEditProfile, onToggleReaction }) {
     const [statsSlide, setStatsSlide] = useState(0); // 0 = calendar, 1 = chart
     const [viewDate, setViewDate] = useState(new Date());
 
@@ -111,14 +111,17 @@ export default function PublicProfileModal({ user, currentUser, activities, spor
                         onTouchStart={onTouchStart}
                         onTouchMove={onTouchMove}
                         onTouchEnd={onTouchEndHandler}
-                        className="relative w-full h-[270px]"
+                        className="relative w-full h-[320px]"
                     >
                         {/* Slide 0: Calendario */}
                         <div className={`absolute inset-0 transition-opacity duration-300 flex flex-col ${statsSlide === 0 ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none'}`}>
-                            <div className="flex justify-between items-center mb-6">
-                                <button type="button" onClick={handlePrevMonth} className="p-1.5 rounded-full hover:bg-white/10 transition-colors"><ChevronLeft className="w-5 h-5 text-white/80" /></button>
-                                <span className="text-sm font-bold capitalize text-white uppercase tracking-wider">{viewDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</span>
-                                <button type="button" onClick={handleNextMonth} className="p-1.5 rounded-full hover:bg-white/10 transition-colors"><ChevronRight className="w-5 h-5 text-white/80" /></button>
+                            <div className="flex flex-col mb-4">
+                                <span className="text-sm font-bold text-white uppercase tracking-wider text-center mb-4">Días de Actividad</span>
+                                <div className="flex justify-between items-center">
+                                    <button type="button" onClick={handlePrevMonth} className="p-1.5 rounded-full hover:bg-white/10 transition-colors bg-white/5"><ChevronLeft className="w-5 h-5 text-white/80" /></button>
+                                    <span className="text-sm font-bold capitalize text-white">{viewDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</span>
+                                    <button type="button" onClick={handleNextMonth} className="p-1.5 rounded-full hover:bg-white/10 transition-colors bg-white/5"><ChevronRight className="w-5 h-5 text-white/80" /></button>
+                                </div>
                             </div>
                             <div className="grid grid-cols-7 gap-1.5 text-center text-[10px] font-bold text-white/50 mb-2">
                                 <div>L</div><div>M</div><div>X</div><div>J</div><div>V</div><div>S</div><div>D</div>
@@ -145,10 +148,13 @@ export default function PublicProfileModal({ user, currentUser, activities, spor
 
                         {/* Slide 1: Gráfico */}
                         <div className={`absolute inset-0 transition-opacity duration-300 flex flex-col ${statsSlide === 1 ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none'}`}>
-                            <div className="flex justify-between items-center mb-6">
-                                <button type="button" onClick={() => setStatsSlide(0)} className="p-1.5 rounded-full hover:bg-white/10 transition-colors"><ChevronLeft className="w-5 h-5 text-white/80" /></button>
-                                <span className="text-sm font-bold text-white uppercase tracking-wider">Histórico de Meses</span>
-                                <div className="w-8"></div>
+                            <div className="flex flex-col mb-4">
+                                <span className="text-sm font-bold text-white uppercase tracking-wider text-center mb-4">Histórico de Meses</span>
+                                <div className="flex justify-between items-center">
+                                    <button type="button" onClick={() => setStatsSlide(0)} className="p-1.5 rounded-full hover:bg-white/10 transition-colors bg-white/5"><ChevronLeft className="w-5 h-5 text-white/80" /></button>
+                                    <span className="text-sm font-bold text-white/0 select-none">-</span>
+                                    <div className="w-8"></div>
+                                </div>
                             </div>
                             {sortedMonths.length === 0 ? (
                                 <div className="w-full flex-1 flex flex-col items-center justify-center text-white/50">
@@ -248,6 +254,30 @@ export default function PublicProfileModal({ user, currentUser, activities, spor
                                                 <img src={act.photo} alt="Prueba" className="w-full h-full object-cover object-center" />
                                             </div>
                                         )}
+
+                                        {/* Area de reacciones */}
+                                        <div className="flex gap-2 items-center mt-2 pt-3 border-t border-slate-50">
+                                            <button
+                                                onClick={() => onToggleReaction && onToggleReaction(act.id, '🔥')}
+                                                className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${act.reactions && currentUser && act.reactions[currentUser.id] === '🔥' ? 'bg-orange-100 text-orange-600' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+                                            >
+                                                <Flame className={`w-4 h-4 ${act.reactions && currentUser && act.reactions[currentUser.id] === '🔥' ? 'fill-orange-500 text-orange-500' : ''}`} />
+                                                {Object.keys(act.reactions || {}).length > 0 && <span>{Object.keys(act.reactions).length}</span>}
+                                            </button>
+                                            {Object.keys(act.reactions || {}).length > 0 && users && (
+                                                <div className="flex -space-x-1.5 overflow-hidden">
+                                                    {Object.keys(act.reactions).slice(0, 3).map(rUserId => {
+                                                        const rUser = users.find(u => u.id === rUserId);
+                                                        if (!rUser) return null;
+                                                        return (
+                                                            <div key={rUserId} className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-slate-200 flex items-center justify-center text-[10px] overflow-hidden shadow-sm" title={rUser.name}>
+                                                                {rUser.avatar?.startsWith('http') || rUser.avatar?.startsWith('data:') ? <img src={rUser.avatar} className="w-full h-full object-cover" /> : rUser.avatar || '😎'}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 );
                             })}

@@ -165,7 +165,8 @@ export function useAppData(user) {
                     date: d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                     createdAt: a.created_at,
                     details: a.details,
-                    photo: a.photo_url
+                    photo: a.photo_url,
+                    reactions: a.reactions || {}
                 };
             });
             setActivities(formattedActs);
@@ -188,7 +189,8 @@ export function useAppData(user) {
                     date: d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                     createdAt: a.created_at,
                     details: a.details,
-                    photo: a.photo_url
+                    photo: a.photo_url,
+                    reactions: a.reactions || {}
                 };
             });
             setUserActivities(formattedUserActs);
@@ -281,6 +283,33 @@ export function useAppData(user) {
             created_at: new Date(date).toISOString()
         }).eq('id', id);
         await loadData();
+    };
+
+    /**
+     * Añade o quita una reacción de una actividad.
+     * Utiliza un campo JSONB 'reactions' en la tabla 'activities'.
+     */
+    const handleToggleReaction = async (activityId, emoji = '🔥') => {
+        const activity = activities.find(a => a.id === activityId);
+        if (!activity) return;
+
+        const currentReactions = activity.reactions || {};
+        const newReactions = { ...currentReactions };
+
+        if (newReactions[user.id] === emoji) {
+            delete newReactions[user.id];
+        } else {
+            newReactions[user.id] = emoji;
+        }
+
+        // Optimistic update
+        setActivities(acts => acts.map(a => a.id === activityId ? { ...a, reactions: newReactions } : a));
+        setUserActivities(acts => acts.map(a => a.id === activityId ? { ...a, reactions: newReactions } : a));
+
+        // Background sync
+        await supabase.from('activities').update({
+            reactions: newReactions
+        }).eq('id', activityId);
     };
 
     /**
@@ -449,7 +478,7 @@ export function useAppData(user) {
         openProfileEdit, handleSaveProfile,
 
         // Actividades
-        handleLogActivity, saveEditedActivity, handleDeleteActivity,
+        handleLogActivity, saveEditedActivity, handleDeleteActivity, handleToggleReaction,
 
         // Ligas – formulario compartido
         newLeagueName, setNewLeagueName,
