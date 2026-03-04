@@ -306,10 +306,17 @@ export function useAppData(user) {
         setActivities(acts => acts.map(a => a.id === activityId ? { ...a, reactions: newReactions } : a));
         setUserActivities(acts => acts.map(a => a.id === activityId ? { ...a, reactions: newReactions } : a));
 
-        // Background sync
-        await supabase.from('activities').update({
-            reactions: newReactions
-        }).eq('id', activityId);
+        // Background sync usando la función RPC (salta el RLS para que este usuario pueda modificar)
+        const { error } = await supabase.rpc('toggle_reaction', {
+            act_id: activityId,
+            usr_id: user.id,
+            emoji: emoji
+        });
+
+        if (error) {
+            console.error('Error guardando la reacción en Supabase mediante RPC:', error);
+            alert('Aún no puedo guardar la reacción. Error: ' + error.message);
+        }
     };
 
     /**

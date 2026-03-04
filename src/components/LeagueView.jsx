@@ -111,7 +111,7 @@ export default function LeagueView({
 
             {/* ── Tarjeta de la liga activa ── */}
             <div className="bg-slate-900 rounded-3xl p-6 text-white relative overflow-hidden shadow-xl">
-                <div className="absolute -right-10 -top-10 opacity-10"><Trophy className="w-48 h-48" /></div>
+                <div className="absolute -right-10 -top-10 opacity-10 pointer-events-none"><Trophy className="w-48 h-48" /></div>
 
                 <div className="flex justify-between items-start">
                     <span className="bg-indigo-500 text-xs font-bold px-2 py-1 rounded-md uppercase tracking-wider">
@@ -124,14 +124,14 @@ export default function LeagueView({
 
                 <div className="flex justify-between items-center mt-3 mb-1">
                     <h1 className="text-2xl font-black">{activeLeague.name}</h1>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 relative z-10">
                         {activeLeague.id !== 'global' && (
-                            <button onClick={handleShareLeague} className="text-white/50 hover:text-white transition-colors bg-white/10 p-2 rounded-full" title="Compartir Liga">
+                            <button onClick={(e) => { e.stopPropagation(); handleShareLeague(); }} className="text-white/50 hover:text-white transition-colors bg-white/10 p-2 rounded-full cursor-pointer pointer-events-auto" title="Compartir Liga">
                                 <Share2 className="w-4 h-4" />
                             </button>
                         )}
                         {activeLeague.id !== 'global' && (
-                            <button onClick={onOpenEditLeague} className="text-white/50 hover:text-white transition-colors bg-white/10 p-2 rounded-full" title="Ajustes">
+                            <button onClick={(e) => { e.stopPropagation(); onOpenEditLeague(); }} className="text-white/50 hover:text-white transition-colors bg-white/10 p-2 rounded-full cursor-pointer pointer-events-auto" title="Ajustes">
                                 <Settings className="w-4 h-4" />
                             </button>
                         )}
