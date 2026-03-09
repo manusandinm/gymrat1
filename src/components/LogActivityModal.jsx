@@ -44,6 +44,7 @@ function calculatePoints(sport, duration, distance, exercises, gymIntensity = 'm
         case 'b3b': pts = baseHourRate(60); break;
         case 'esquí': pts = baseHourRate(5) + (dist * 1.5); break;
         case 'pádel': pts = baseHourRate(40); break;
+        case 'escalada': pts = baseHourRate(35); break;
         default: pts = 0;
     }
     return Math.floor(pts);

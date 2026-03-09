@@ -22,4 +22,5 @@ export const SPORTS = [
     { id: 'b3b', name: 'B3B', icon: '🥊', color: 'bg-red-500' },
     { id: 'esquí', name: 'Esquí', icon: '⛷️', color: 'bg-blue-500', unit: 'km', step: 1 },
     { id: 'pádel', name: 'Pádel', icon: '🎾', color: 'bg-green-500' },
+    { id: 'escalada', name: 'Escalada', icon: '🧗', color: 'bg-amber-500' },
 ];
